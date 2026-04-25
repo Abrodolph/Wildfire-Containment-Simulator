@@ -212,6 +212,16 @@ class WildfireEnv:
 
         self.current_step += 1
 
+        # Log a hold-message when fire is extinguished before min_active_steps so
+        # agents (and the LLM) understand the episode must continue for monitoring.
+        burning_now = (self.grid.count_by_state(FireState.BURNING)
+                       + self.grid.count_by_state(FireState.EMBER))
+        if burning_now == 0 and self.current_step < self.config.min_active_steps:
+            step_events.append(
+                f"All fires contained. Holding perimeter until step "
+                f"{self.config.min_active_steps} (min_active_steps)."
+            )
+
         # ── Step 9: Compute reward ──
         legacy_reward = self.reward_calc.compute_reward(self.grid, self.resources, self.current_step)
 
@@ -324,19 +334,39 @@ class WildfireEnv:
         }
 
     def _is_redundant(self, action: Action) -> bool:
-        """True if action repeats the same type + target coords as the previous action."""
+        """True if action is a meaningless repeat of the previous action.
+
+        Actions that use target coordinates (DROP_RETARDANT, DEPLOY_CREW, RECON_FLIGHT)
+        are redundant when the type + target cell match.  Directional actions (MOVE_CREW,
+        BUILD_FIREBREAK) require the same crew_id AND direction to be redundant — two
+        consecutive MOVE_CREW steps by different crews, or in different directions, are
+        valid patrol behaviour and must not be penalised.
+        """
         if self._prev_action is None:
             return False
         prev = self._prev_action
         if action.action_type != prev.action_type:
             return False
-        return action.target_row == prev.target_row and action.target_col == prev.target_col
+        # Coordinate-targeted actions: redundant when same cell is targeted again
+        if action.target_row is not None or prev.target_row is not None:
+            return (action.target_row == prev.target_row
+                    and action.target_col == prev.target_col)
+        # Crew directional actions: redundant only when same crew moves same direction
+        if action.crew_id is not None:
+            return (action.crew_id == prev.crew_id
+                    and action.direction == prev.direction)
+        return False
 
     def _ignite_initial_fires(self) -> None:
         """Place initial fire ignition points based on tier config.
 
         Ignition candidates are shifted away from populated cells to ensure
         a minimum survivable distance, reducing unwinnable-scenario variance.
+
+        Intensity is set high enough (0.65) that a single tanker drop (-0.4)
+        leaves residual fire (0.25) so the episode cannot be solved in 1-2
+        steps. The fire must spread, be actively managed, and burn for at
+        least min_active_steps before the episode can end.
         """
         rows, cols = self.config.grid_rows, self.config.grid_cols
 
@@ -344,19 +374,25 @@ class WildfireEnv:
         min_pop_dist = {"easy": 4, "medium": 6, "hard": 7}.get(self.config.tier_name, 5)
 
         if self.config.tier_name == "easy":
-            r, c = self._find_ignition_candidate(rows // 2, cols // 2, min_pop_dist)
-            self.grid.ignite_cell(r, c, intensity=0.3)
+            # Two ignition points spread across the grid so crews must split
+            r1, c1 = self._find_ignition_candidate(rows // 2, cols // 3, min_pop_dist)
+            self.grid.ignite_cell(r1, c1, intensity=0.65)
+            r2, c2 = self._find_ignition_candidate(rows // 2, 2 * cols // 3, min_pop_dist)
+            self.grid.ignite_cell(r2, c2, intensity=0.65)
         elif self.config.tier_name == "medium":
-            r1, c1 = self._find_ignition_candidate(rows // 3, cols // 3, min_pop_dist)
-            self.grid.ignite_cell(r1, c1, intensity=0.3)
+            # Three ignition points: forces genuine multi-front management
+            r1, c1 = self._find_ignition_candidate(rows // 4, cols // 3, min_pop_dist)
+            self.grid.ignite_cell(r1, c1, intensity=0.65)
             r2, c2 = self._find_ignition_candidate(2 * rows // 3, 2 * cols // 3, min_pop_dist)
-            self.grid.ignite_cell(r2, c2, intensity=0.3)
+            self.grid.ignite_cell(r2, c2, intensity=0.65)
+            r3, c3 = self._find_ignition_candidate(rows // 2, cols // 2, min_pop_dist)
+            self.grid.ignite_cell(r3, c3, intensity=0.65)
         else:
-            # Two initial points (third comes later via staggered ignition)
+            # Two initial points (third comes later via staggered ignition at step 30)
             r1, c1 = self._find_ignition_candidate(rows // 4, cols // 4, min_pop_dist)
-            self.grid.ignite_cell(r1, c1, intensity=0.3)
+            self.grid.ignite_cell(r1, c1, intensity=0.65)
             r2, c2 = self._find_ignition_candidate(rows // 2, 3 * cols // 4, min_pop_dist)
-            self.grid.ignite_cell(r2, c2, intensity=0.3)
+            self.grid.ignite_cell(r2, c2, intensity=0.65)
 
     def _find_ignition_candidate(self, target_r: int, target_c: int, min_pop_dist: int) -> tuple[int, int]:
         """Return the nearest valid ignition cell to (target_r, target_c) that is at
@@ -482,11 +518,17 @@ class WildfireEnv:
         # Fire fully contained (no burning cells)
         burning = self.grid.count_by_state(FireState.BURNING)
         ember = self.grid.count_by_state(FireState.EMBER)
-        if burning == 0 and ember == 0 and self.current_step > 1:
-            # Don't end on step 0-1 (fire just started)
-            if not (self.config.staggered_ignition_step
+        if burning == 0 and ember == 0:
+            # Enforce minimum active steps — prevents trivial 1-2 step episodes
+            # where a single tanker drop or natural burnout ends the episode
+            # before the agent has taken any meaningful sequence of actions.
+            if self.current_step < self.config.min_active_steps:
+                return False
+            # Don't terminate before staggered ignition fires (hard tier)
+            if (self.config.staggered_ignition_step
                     and self.current_step < self.config.staggered_ignition_step):
-                return True
+                return False
+            return True
 
         # All populated zones burned (catastrophic failure)
         total_pop = self.grid.get_total_population()
@@ -514,13 +556,29 @@ class WildfireEnv:
         resource_state = self.resources.get_resource_state()
 
         # Stats
+        total_burnable = self.grid.get_total_burnable()
+        cells_burned = self.grid.get_burned_count()
+        total_pop = self.grid.get_total_population()
+        pop_lost = self.grid.get_population_lost()
+
+        area_saved_pct = round(
+            100.0 * (total_burnable - cells_burned) / total_burnable, 1
+        ) if total_burnable > 0 else 100.0
+
+        civilians_saved_pct = round(
+            100.0 * (total_pop - pop_lost) / total_pop, 1
+        ) if total_pop > 0 else 100.0
+
         stats = ClusterStats(
-            cells_burned=self.grid.get_burned_count(),
+            cells_burned=cells_burned,
             cells_burning=self.grid.count_by_state(FireState.BURNING),
-            cells_saved=self.grid.get_total_burnable() - self.grid.get_burned_count() - self.grid.count_by_state(FireState.BURNING),
+            cells_saved=total_burnable - cells_burned - self.grid.count_by_state(FireState.BURNING),
             population_threatened=self._count_threatened_population(),
-            population_lost=self.grid.get_population_lost(),
+            population_lost=pop_lost,
+            total_population=total_pop,
             containment_pct=self._compute_containment_pct(),
+            area_saved_pct=area_saved_pct,
+            civilians_saved_pct=civilians_saved_pct,
             current_step=self.current_step,
             max_steps=self.config.episode_length,
             firebreaks_built=self.resources.total_firebreaks_built,

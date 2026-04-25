@@ -12,8 +12,14 @@ if TYPE_CHECKING:
 from .models import FireState, IntensityBin
 
 
-def serialize_observation(obs: "Observation", step_num: int, max_steps: int) -> str:
-    situation = _format_situation(obs)
+def serialize_observation(
+    obs: "Observation",
+    step_num: int,
+    max_steps: int,
+    tier: str = "",
+    prev_cells_burning: int = 0,
+) -> str:
+    situation = _format_situation(obs, prev_cells_burning)
     grid_summary = _summarize_grid_regions(obs.grid)
     resources = _format_resources(obs.resources)
     events = _format_events(obs.recent_events)
@@ -29,8 +35,9 @@ def serialize_observation(obs: "Observation", step_num: int, max_steps: int) -> 
         parts.append(obs._briefing_reminder)
         parts.append("")
 
+    tier_str = f" [{tier.upper()}]" if tier else ""
     parts += [
-        f"=== WILDFIRE INCIDENT COMMAND — STEP {step_num}/{max_steps} ===",
+        f"=== WILDFIRE INCIDENT COMMAND{tier_str} — STEP {step_num}/{max_steps} ===",
         "",
         "SITUATION:",
         situation,
@@ -52,12 +59,14 @@ def serialize_observation(obs: "Observation", step_num: int, max_steps: int) -> 
 
 # ── Situation block ──────────────────────────────────────────
 
-def _format_situation(obs: "Observation") -> str:
+def _format_situation(obs: "Observation", prev_cells_burning: int = 0) -> str:
     stats = obs.stats
     w = obs.weather
 
     burning = stats.cells_burning
-    containment = round(stats.containment_pct, 1)
+    land_saved = round(stats.area_saved_pct, 1)
+    civ_safe = round(stats.civilians_saved_pct, 1)
+    cells_burned = stats.cells_burned
     pop_at_risk = stats.population_threatened
 
     wind_dir = _deg_to_compass(w.wind_direction_deg)
@@ -65,8 +74,19 @@ def _format_situation(obs: "Observation") -> str:
 
     last_event = obs.recent_events[-1] if obs.recent_events else "None"
 
+    # Spread delta — positive means fire is growing, negative means shrinking
+    delta = burning - prev_cells_burning
+    if delta > 0:
+        spread_str = f" (+{delta} spreading)"
+    elif delta < 0:
+        spread_str = f" ({delta} shrinking)"
+    else:
+        spread_str = " (stable)"
+
     lines = [
-        f"- Fire active on {burning} cells. Containment: {containment}%. Population at risk: {pop_at_risk} zones.",
+        f"- Fire active on {burning} cells{spread_str}. Land saved: {land_saved}% of burnable area "
+        f"({cells_burned} cells burned out). Civilians safe: {civ_safe}%. "
+        f"Population at risk: {pop_at_risk} zones.",
         f"- Wind: {w.wind_speed_kmh:.0f} km/h {wind_dir} (±5 km/h noise). Humidity: {w.humidity_pct:.0f}%. Rain: {rain}.",
         f"- Last event: {last_event}",
     ]

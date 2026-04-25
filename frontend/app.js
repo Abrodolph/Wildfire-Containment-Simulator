@@ -11,6 +11,69 @@
 
 "use strict";
 
+// ── API field helpers (snake_case from Python; tolerate camelCase if ever used) ─
+function pickStat(obj, ...keys) {
+  if (!obj) return undefined;
+  for (const k of keys) {
+    if (Object.prototype.hasOwnProperty.call(obj, k) && obj[k] != null) {
+      return obj[k];
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Build display-ready episode metrics from the latest observation.
+ * Falls back to grid-visible cells for land % only when server omits area_saved_pct.
+ */
+function normalizeEpisodeStats(obs) {
+  const st = obs?.stats ?? {};
+  const cellsBurned = pickStat(st, "cells_burned", "cellsBurned") ?? 0;
+  const popLost = pickStat(st, "population_lost", "populationLost") ?? 0;
+  const totalPop = pickStat(st, "total_population", "totalPopulation") ?? 0;
+
+  let areaSaved = pickStat(st, "area_saved_pct", "areaSavedPct");
+  let civSafe = pickStat(st, "civilians_saved_pct", "civiliansSavedPct");
+
+  if (areaSaved == null && obs?.grid?.length) {
+    let burnable = 0;
+    let burnedVis = 0;
+    for (const row of obs.grid) {
+      for (const cell of row) {
+        const f = cell.fuel_type;
+        if (!f || f === "water" || f === "road") continue;
+        if (cell.fire_state === "unknown") continue;
+        burnable++;
+        if (cell.fire_state === "burned_out") burnedVis++;
+      }
+    }
+    if (burnable > 0) {
+      areaSaved = Math.round(1000 * (burnable - burnedVis) / burnable) / 10;
+    }
+  }
+
+  if (civSafe == null && totalPop > 0) {
+    civSafe = Math.round(1000 * (totalPop - popLost) / totalPop) / 10;
+  } else if (civSafe == null && popLost === 0) {
+    civSafe = 100.0;
+  }
+
+  const containment = pickStat(st, "containment_pct", "containmentPct");
+  if (areaSaved == null && containment != null) {
+    areaSaved = containment;
+  }
+
+  return {
+    areaSaved,
+    civSafe,
+    cellsBurned,
+    popLost,
+    totalPop,
+    currentStep: pickStat(st, "current_step", "currentStep"),
+    raw: st,
+  };
+}
+
 // ── Simulation state ──────────────────────────────────────────────────────────
 const sim = {
   obs: null,            // current Observation (agent's view)
@@ -161,17 +224,28 @@ function renderCanvas(obs, groundTruth = null) {
 }
 
 // ── Stats panel ───────────────────────────────────────────────────────────────
-function updateStats(stats, cumulativeReward, lastStepReward) {
-  if (!stats) return;
+function updateStats(obs, cumulativeReward, lastStepReward) {
+  if (!obs?.stats) return;
+  const stats = obs.stats;
 
-  const cur = stats.current_step ?? 0;
-  const max = stats.max_steps ?? 1;
+  const cur = pickStat(stats, "current_step", "currentStep") ?? 0;
+  const max = pickStat(stats, "max_steps", "maxSteps") ?? 1;
 
-  setText("stat-step",             `${cur} / ${max}`);
-  setText("stat-containment-val",  `${(stats.containment_pct ?? 0).toFixed(1)}%`);
-  setText("stat-burning-val",      stats.cells_burning ?? 0);
-  setText("stat-pop-threat-val",   stats.population_threatened ?? 0);
-  setText("stat-pop-lost-val",     stats.population_lost ?? 0);
+  setText("stat-step", `${cur} / ${max}`);
+
+  const n = normalizeEpisodeStats(obs);
+  setText(
+    "stat-land-saved-val",
+    n.areaSaved != null ? `${Number(n.areaSaved).toFixed(1)}%` : "—"
+  );
+  setText(
+    "stat-civilians-safe-val",
+    n.civSafe != null ? `${Number(n.civSafe).toFixed(1)}%` : "—"
+  );
+  setText("stat-cells-burned-val", n.cellsBurned);
+  setText("stat-burning-val", pickStat(stats, "cells_burning", "cellsBurning") ?? 0);
+  setText("stat-pop-threat-val", pickStat(stats, "population_threatened", "populationThreatened") ?? 0);
+  setText("stat-pop-lost-val", n.popLost);
 
   // Cumulative reward
   setText("reward-total", cumulativeReward.toFixed(3));
@@ -298,31 +372,53 @@ function updateActionLog(action) {
 }
 
 // ── Terminal overlay ──────────────────────────────────────────────────────────
-function showTerminal(obs) {
+async function showTerminal() {
   const overlay = document.getElementById("terminal-overlay");
   if (!overlay) return;
 
-  const stats = obs?.stats ?? {};
-  const popLost = stats.population_lost ?? 0;
-  const containment = stats.containment_pct ?? 0;
-
   const card = document.getElementById("terminal-card");
+  if (!card) return;
+
+  const n = normalizeEpisodeStats(sim.obs);
   const title = card.querySelector("h2");
 
-  if (popLost === 0) {
-    title.textContent = "✅ FIRE CONTAINED";
+  if (n.popLost === 0) {
+    title.textContent = "✅ EPISODE COMPLETE";
     title.className = "win";
   } else {
     title.textContent = "⚠ EPISODE ENDED";
     title.className = "loss";
   }
 
-  setText("terminal-containment", `${containment.toFixed(1)}%`);
-  setText("terminal-pop-lost",    popLost);
-  setText("terminal-reward",      sim.cumulativeReward.toFixed(3));
-  setText("terminal-step",        stats.current_step ?? "—");
+  const landStr = n.areaSaved != null ? `${Number(n.areaSaved).toFixed(1)}%` : "—";
+  const civStr = n.civSafe != null ? `${Number(n.civSafe).toFixed(1)}%` : "—";
+  setText("terminal-land-saved", landStr);
+  setText("terminal-civilians-safe", civStr);
+  setText("terminal-cells-burned", String(n.cellsBurned));
+  setText("terminal-pop-lost", n.popLost);
+  setText("terminal-reward", sim.cumulativeReward.toFixed(3));
+  setText("terminal-step", n.currentStep ?? "—");
 
   overlay.classList.add("show");
+
+  // Authoritative end-game numbers (ground truth — fixes blank UI if observation JSON differed)
+  try {
+    const st = await apiGet("/state");
+    if (st.error) return;
+    const tb = st.total_burnable ?? 0;
+    const burned = st.cells_burned ?? 0;
+    const landPct = tb > 0 ? Math.round(1000 * (tb - burned) / tb) / 10 : 100;
+    const tp = st.total_population ?? 0;
+    const lost = st.population_lost ?? 0;
+    const civPct = tp > 0 ? Math.round(1000 * (tp - lost) / tp) / 10 : 100;
+    setText("terminal-land-saved", `${landPct}%`);
+    setText("terminal-civilians-safe", `${civPct}%`);
+    setText("terminal-cells-burned", String(burned));
+    setText("terminal-pop-lost", String(lost));
+    setText("terminal-step", st.current_step ?? "—");
+  } catch (e) {
+    console.warn("Could not refresh end-game stats from /state", e);
+  }
 }
 
 function hideTerminal() {
@@ -356,7 +452,7 @@ async function apiGet(path) {
 function applyObservation(obs) {
   sim.obs = obs;
   renderCanvas(obs, sim.groundTruthData);
-  updateStats(obs.stats, sim.cumulativeReward, sim.lastStepReward);
+  updateStats(obs, sim.cumulativeReward, sim.lastStepReward);
   updateResources(obs.resources);
   updateWeather(obs.weather);
   updateEvents(obs.recent_events ?? []);
@@ -417,7 +513,7 @@ async function doAutoStep() {
 
       if (snap.done) {
         stopPlay();
-        showTerminal(snap.observation);
+        await showTerminal();
         break;
       }
     }

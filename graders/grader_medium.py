@@ -27,7 +27,7 @@ def grade(agent, seed: int = 42):
 
     details = {
         "total_reward": round(total_reward, 4),
-        "containment_pct": round(final.get("containment_pct", 0.0), 4),
+        "containment_pct": round(final.get("reward_breakdown", {}).get("containment", 0.0), 4),
         "pop_saved_pct": round(1.0 - pop_lost / total_pop, 4),
         "steps": env.current_step,
         "crew_casualty": env._crew_casualty_occurred,

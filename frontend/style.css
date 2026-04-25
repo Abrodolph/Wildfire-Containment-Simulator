@@ -250,6 +250,16 @@ input[type="range"]::-webkit-slider-thumb {
 
 #grid-canvas { display: block; image-rendering: pixelated; }
 
+.map-legend {
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.45;
+  max-width: 100%;
+}
+.map-legend strong { color: var(--text); }
+
 /* Tooltip overlay (shows cell info on hover) */
 #cell-tooltip {
   position: absolute;
@@ -356,8 +366,10 @@ input[type="range"]::-webkit-slider-thumb {
 .stat-item.step-item { grid-column: 1 / -1; }
 .stat-item.step-item .stat-value { font-size: 14px; }
 
-#stat-containment .stat-value { color: var(--safe); }
-#stat-burning     .stat-value { color: var(--fire); }
+#stat-land-saved     .stat-value { color: var(--safe); }
+#stat-civilians-safe .stat-value { color: var(--safe); }
+#stat-cells-burned   .stat-value { color: var(--warn); }
+#stat-burning        .stat-value { color: var(--fire); }
 #stat-pop-threat  .stat-value { color: var(--warn); }
 #stat-pop-lost    .stat-value { color: var(--crit); }
 

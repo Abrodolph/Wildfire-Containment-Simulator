@@ -288,7 +288,13 @@ class ClusterStats(BaseModel):
     cells_saved: int = 0
     population_threatened: int = 0
     population_lost: int = 0
+    total_population: int = Field(ge=0, default=0, description="Initial population (for UI % civ safe)")
     containment_pct: float = Field(ge=0.0, le=100.0, default=0.0)
+    # Meaningful progress metrics shown to agent and display
+    area_saved_pct: float = Field(ge=0.0, le=100.0, default=100.0,
+        description="Percentage of burnable land not yet burned")
+    civilians_saved_pct: float = Field(ge=0.0, le=100.0, default=100.0,
+        description="Percentage of civilians in unburned zones")
     current_step: int = 0
     max_steps: int = 100
     firebreaks_built: int = 0
@@ -342,6 +348,7 @@ class TierConfig(BaseModel):
     crew_loss_step: Optional[int] = None
     crew_loss_id: Optional[str] = None
     tanker_cooldown: int = 5
+    min_active_steps: int = 5   # episode cannot end via fire-out before this step
     wind_speed_init: float = 10.0
     wind_dir_init: float = 0.0
     humidity_init: float = 40.0
@@ -367,11 +374,12 @@ TIER_EASY = TierConfig(
     firebreak_budget=15,
     recon_budget=0,
     episode_length=80,
-    num_ignition_points=1,
+    num_ignition_points=2,
     enable_smoke_occlusion=False,
     enable_sensor_noise=False,
     enable_fog_of_war=False,
     enable_wind_shifts=False,
+    min_active_steps=25,
     wind_speed_init=10.0,
     wind_dir_init=0.0,
     humidity_init=40.0,
@@ -391,11 +399,12 @@ TIER_MEDIUM = TierConfig(
     firebreak_budget=20,
     recon_budget=1,
     episode_length=150,
-    num_ignition_points=2,
+    num_ignition_points=3,
     enable_smoke_occlusion=True,
     enable_sensor_noise=True,
     enable_fog_of_war=False,
     enable_wind_shifts=True,
+    min_active_steps=45,
     wind_speed_init=15.0,
     wind_dir_init=45.0,
     humidity_init=35.0,
@@ -417,6 +426,7 @@ TIER_HARD = TierConfig(
     episode_length=300,
     num_ignition_points=3,
     staggered_ignition_step=30,
+    min_active_steps=80,
     enable_smoke_occlusion=True,
     enable_sensor_noise=True,
     enable_fog_of_war=True,
