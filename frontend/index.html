@@ -83,16 +83,8 @@
         <div id="terminal-card">
           <h2 class="win">✅ FIRE CONTAINED</h2>
           <div class="stat-row">
-            <span>Land saved (unburned)</span>
-            <span id="terminal-land-saved">—</span>
-          </div>
-          <div class="stat-row">
-            <span>Civilians safe</span>
-            <span id="terminal-civilians-safe">—</span>
-          </div>
-          <div class="stat-row">
-            <span>Cells burned (total)</span>
-            <span id="terminal-cells-burned">—</span>
+            <span>Containment</span>
+            <span id="terminal-containment">—</span>
           </div>
           <div class="stat-row">
             <span>Population lost</span>
@@ -112,10 +104,6 @@
         </div>
       </div>
     </div>
-    <p id="map-legend" class="map-legend">
-      <strong>Map:</strong> green dot / circle = ground crew · blue outline = populated zone ·
-      bright blue cells = water · grey = roads
-    </p>
   </main>
 
   <!-- Sidebar -->
@@ -129,17 +117,9 @@
           <span class="stat-label">STEP</span>
           <span class="stat-value" id="stat-step">— / —</span>
         </div>
-        <div class="stat-item" id="stat-land-saved">
-          <span class="stat-label">LAND SAVED</span>
-          <span class="stat-value" id="stat-land-saved-val">—</span>
-        </div>
-        <div class="stat-item" id="stat-civilians-safe">
-          <span class="stat-label">CIVILIANS SAFE</span>
-          <span class="stat-value" id="stat-civilians-safe-val">—</span>
-        </div>
-        <div class="stat-item" id="stat-cells-burned">
-          <span class="stat-label">CELLS BURNED</span>
-          <span class="stat-value" id="stat-cells-burned-val">—</span>
+        <div class="stat-item" id="stat-containment">
+          <span class="stat-label">CONTAINMENT</span>
+          <span class="stat-value" id="stat-containment-val">—</span>
         </div>
         <div class="stat-item" id="stat-burning">
           <span class="stat-label">BURNING</span>
@@ -294,6 +274,6 @@
   </span>
 </footer>
 
-<script src="app.js?v=4"></script>
+<script src="app.js"></script>
 </body>
 </html>
