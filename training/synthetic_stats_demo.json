@@ -1,0 +1,352 @@
+[
+  {
+    "step": 0,
+    "mean_reward": 2.0628651105466966,
+    "tier": "easy",
+    "parse_failure_rate": 0.29735790273417395,
+    "promoted_to": null
+  },
+  {
+    "step": 1,
+    "mean_reward": 2.4002113252216413,
+    "tier": "easy",
+    "parse_failure_rate": 0.2970980023430608,
+    "promoted_to": null
+  },
+  {
+    "step": 2,
+    "mean_reward": 1.8921653134194447,
+    "tier": "easy",
+    "parse_failure_rate": 0.2972319010981897,
+    "promoted_to": null
+  },
+  {
+    "step": 3,
+    "mean_reward": 2.892000022565069,
+    "tier": "easy",
+    "parse_failure_rate": 0.30394161926258484,
+    "promoted_to": null
+  },
+  {
+    "step": 4,
+    "mean_reward": 1.9681323820965035,
+    "tier": "easy",
+    "parse_failure_rate": 0.25469157057907893,
+    "promoted_to": null
+  },
+  {
+    "step": 5,
+    "mean_reward": 2.088362768731324,
+    "tier": "easy",
+    "parse_failure_rate": 0.2758265195869448,
+    "promoted_to": null
+  },
+  {
+    "step": 6,
+    "mean_reward": 1.3174846126805828,
+    "tier": "easy",
+    "parse_failure_rate": 0.2656241667213491,
+    "promoted_to": null
+  },
+  {
+    "step": 7,
+    "mean_reward": 1.9370445263734675,
+    "tier": "easy",
+    "parse_failure_rate": 0.25035465290593095,
+    "promoted_to": null
+  },
+  {
+    "step": 8,
+    "mean_reward": 2.367870508571345,
+    "tier": "easy",
+    "parse_failure_rate": 0.25367399687261694,
+    "promoted_to": null
+  },
+  {
+    "step": 9,
+    "mean_reward": 2.9258152681870664,
+    "tier": "easy",
+    "parse_failure_rate": 0.27585026738885354,
+    "promoted_to": null
+  },
+  {
+    "step": 10,
+    "mean_reward": 2.735732668527983,
+    "tier": "easy",
+    "parse_failure_rate": 0.27732926941099373,
+    "promoted_to": null
+  },
+  {
+    "step": 11,
+    "mean_reward": 2.547402663256693,
+    "tier": "easy",
+    "parse_failure_rate": 0.2520302014018604,
+    "promoted_to": null
+  },
+  {
+    "step": 12,
+    "mean_reward": 3.4117350908259043,
+    "tier": "easy",
+    "parse_failure_rate": 0.24188024595521748,
+    "promoted_to": null
+  },
+  {
+    "step": 13,
+    "mean_reward": 2.6682503753230957,
+    "tier": "easy",
+    "parse_failure_rate": 0.2165654924748316,
+    "promoted_to": null
+  },
+  {
+    "step": 14,
+    "mean_reward": 2.8911370871663307,
+    "tier": "easy",
+    "parse_failure_rate": 0.23440390246940096,
+    "promoted_to": null
+  },
+  {
+    "step": 15,
+    "mean_reward": 2.6951909082306322,
+    "tier": "easy",
+    "parse_failure_rate": 0.22081648850256572,
+    "promoted_to": null
+  },
+  {
+    "step": 16,
+    "mean_reward": 3.2003874950427615,
+    "tier": "easy",
+    "parse_failure_rate": 0.23081691169371613,
+    "promoted_to": null
+  },
+  {
+    "step": 17,
+    "mean_reward": 3.467329561253171,
+    "tier": "easy",
+    "parse_failure_rate": 0.22210745418079839,
+    "promoted_to": null
+  },
+  {
+    "step": 18,
+    "mean_reward": 3.11308569529083,
+    "tier": "easy",
+    "parse_failure_rate": 0.2074077273261446,
+    "promoted_to": null
+  },
+  {
+    "step": 19,
+    "mean_reward": 3.9119877350306647,
+    "tier": "easy",
+    "parse_failure_rate": 0.2348686229044152,
+    "promoted_to": null
+  },
+  {
+    "step": 20,
+    "mean_reward": 0.3704672339479399,
+    "tier": "medium",
+    "parse_failure_rate": 0.23027847549478123,
+    "promoted_to": "medium"
+  },
+  {
+    "step": 21,
+    "mean_reward": 1.7329377118911524,
+    "tier": "medium",
+    "parse_failure_rate": 0.21062622801400854,
+    "promoted_to": null
+  },
+  {
+    "step": 22,
+    "mean_reward": 1.2522278151646518,
+    "tier": "medium",
+    "parse_failure_rate": 0.18372154370927143,
+    "promoted_to": null
+  },
+  {
+    "step": 23,
+    "mean_reward": 1.9090103417684792,
+    "tier": "medium",
+    "parse_failure_rate": 0.22420516632899928,
+    "promoted_to": null
+  },
+  {
+    "step": 24,
+    "mean_reward": 2.1408174349330626,
+    "tier": "medium",
+    "parse_failure_rate": 0.2063020752946874,
+    "promoted_to": null
+  },
+  {
+    "step": 25,
+    "mean_reward": 1.4786902053294781,
+    "tier": "medium",
+    "parse_failure_rate": 0.15083362735435657,
+    "promoted_to": null
+  },
+  {
+    "step": 26,
+    "mean_reward": 1.3577729334399582,
+    "tier": "medium",
+    "parse_failure_rate": 0.1831294987015267,
+    "promoted_to": null
+  },
+  {
+    "step": 27,
+    "mean_reward": 0.7758192681252227,
+    "tier": "medium",
+    "parse_failure_rate": 0.17290244120364015,
+    "promoted_to": null
+  },
+  {
+    "step": 28,
+    "mean_reward": 1.694931847411115,
+    "tier": "medium",
+    "parse_failure_rate": 0.17392085447925734,
+    "promoted_to": null
+  },
+  {
+    "step": 29,
+    "mean_reward": 0.9479410166214055,
+    "tier": "medium",
+    "parse_failure_rate": 0.1417659485592193,
+    "promoted_to": null
+  },
+  {
+    "step": 30,
+    "mean_reward": 1.3817823764283894,
+    "tier": "medium",
+    "parse_failure_rate": 0.1266039618445427,
+    "promoted_to": null
+  },
+  {
+    "step": 31,
+    "mean_reward": 2.529683938565067,
+    "tier": "medium",
+    "parse_failure_rate": 0.13508178543115695,
+    "promoted_to": null
+  },
+  {
+    "step": 32,
+    "mean_reward": 1.884484814730101,
+    "tier": "medium",
+    "parse_failure_rate": 0.1348285490905215,
+    "promoted_to": null
+  },
+  {
+    "step": 33,
+    "mean_reward": 2.571736439401061,
+    "tier": "medium",
+    "parse_failure_rate": 0.16140721974163677,
+    "promoted_to": null
+  },
+  {
+    "step": 34,
+    "mean_reward": 2.1566763114124576,
+    "tier": "medium",
+    "parse_failure_rate": 0.08592980238706696,
+    "promoted_to": null
+  },
+  {
+    "step": 35,
+    "mean_reward": 1.9260144871299432,
+    "tier": "medium",
+    "parse_failure_rate": 0.13867372381553067,
+    "promoted_to": null
+  },
+  {
+    "step": 36,
+    "mean_reward": 2.461980787921085,
+    "tier": "medium",
+    "parse_failure_rate": 0.10764185910584798,
+    "promoted_to": null
+  },
+  {
+    "step": 37,
+    "mean_reward": 2.9310056816641614,
+    "tier": "medium",
+    "parse_failure_rate": 0.08859138059973412,
+    "promoted_to": null
+  },
+  {
+    "step": 38,
+    "mean_reward": 1.7492359890923905,
+    "tier": "medium",
+    "parse_failure_rate": 0.12870099976228044,
+    "promoted_to": null
+  },
+  {
+    "step": 39,
+    "mean_reward": 2.1645273069126554,
+    "tier": "medium",
+    "parse_failure_rate": 0.14504785167290507,
+    "promoted_to": null
+  },
+  {
+    "step": 40,
+    "mean_reward": 2.294259596256233,
+    "tier": "medium",
+    "parse_failure_rate": 0.08733611819615544,
+    "promoted_to": null
+  },
+  {
+    "step": 41,
+    "mean_reward": 2.071218247383596,
+    "tier": "medium",
+    "parse_failure_rate": 0.07317707764761607,
+    "promoted_to": null
+  },
+  {
+    "step": 42,
+    "mean_reward": 1.681159916806696,
+    "tier": "medium",
+    "parse_failure_rate": 0.10260822981536463,
+    "promoted_to": null
+  },
+  {
+    "step": 43,
+    "mean_reward": 2.670582906206403,
+    "tier": "medium",
+    "parse_failure_rate": 0.11089117638882233,
+    "promoted_to": null
+  },
+  {
+    "step": 44,
+    "mean_reward": 2.0626971043700344,
+    "tier": "medium",
+    "parse_failure_rate": 0.11378214904887346,
+    "promoted_to": null
+  },
+  {
+    "step": 45,
+    "mean_reward": 2.3563061460956667,
+    "tier": "medium",
+    "parse_failure_rate": 0.10648816557689172,
+    "promoted_to": null
+  },
+  {
+    "step": 46,
+    "mean_reward": 2.3436070764087016,
+    "tier": "medium",
+    "parse_failure_rate": 0.05529033415315448,
+    "promoted_to": null
+  },
+  {
+    "step": 47,
+    "mean_reward": 2.7448926857793334,
+    "tier": "medium",
+    "parse_failure_rate": 0.08562906169738942,
+    "promoted_to": null
+  },
+  {
+    "step": 48,
+    "mean_reward": 2.760504788357672,
+    "tier": "medium",
+    "parse_failure_rate": 0.048289423517533264,
+    "promoted_to": null
+  },
+  {
+    "step": 49,
+    "mean_reward": 2.069390142961666,
+    "tier": "medium",
+    "parse_failure_rate": 0.026969595701651434,
+    "promoted_to": null
+  }
+]

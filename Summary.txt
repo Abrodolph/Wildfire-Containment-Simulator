@@ -1,0 +1,283 @@
+Wildfire Containment Simulator - Project Summary
+================================================
+
+1. Project Purpose
+This repository implements a grid-based wildfire containment environment designed for reinforcement learning and LLM-agent evaluation. The project follows an OpenEnv-style API with reset(), step(), and state() methods. The main challenge is resource allocation under uncertainty: an agent must deploy crews, use tankers, build firebreaks, and optionally use recon flights to contain a spreading wildfire before it destroys populated cells.
+
+The environment is framed like a hackathon benchmark rather than a full scientific simulator. It is intentionally lightweight, reproducible, and easy to grade, but it still models realistic drivers such as fuel, wind, slope, moisture, smoke, and operational constraints.
+
+2. High-Level Repository Structure
+
+Root files
+- app.py: top-level FastAPI server entry point used by Docker/Hugging Face deployment.
+- inference.py: LLM-driven rollout script that queries an OpenAI-compatible model and runs it on one or more tasks.
+- openenv.yaml: environment metadata, API contract, task definitions, and baseline declarations.
+- pyproject.toml: package metadata, dependencies, and console scripts.
+- README.md: project overview, task descriptions, API examples, and benchmark summary.
+- Dockerfile: container build for serving the environment on port 7860.
+
+Core packages
+- env/: main simulation code.
+- agents/: baseline decision policies.
+- graders/: one grader per difficulty tier.
+- scripts/: evaluation entry point and saved benchmark output.
+- server/: secondary server package entry point for the packaged `serve` / `server` scripts.
+
+Notable extra items
+- There is a nested `Wildfire-Containment-Simulator/README.md` which looks like leftover Hugging Face space metadata rather than active source.
+- There is also a strange root directory named `{env,graders,agents,scripts}` that does not appear to be part of the running code.
+- `venv/`, `__pycache__/`, and `*.egg-info` are local/generated artifacts rather than logical project modules.
+
+3. Main Runtime Architecture
+The central class is env/wildfire_env.py -> WildfireEnv.
+
+WildfireEnv owns five main subsystems:
+- Grid: terrain generation, static cell properties, dynamic cell state, smoke, moisture, and observation filtering.
+- FireSpreadEngine: cellular fire propagation and burn progression.
+- WeatherEngine: wind, humidity, and rain evolution.
+- ResourceManager: crews, tankers, firebreak budget, recon reveal logic, and suppression.
+- RewardCalculator: weighted reward computation and penalties.
+
+The environment is configured by TierConfig objects defined in env/models.py. Three presets exist:
+- easy: 15x15 grid, simple conditions, 1 ignition, no fog/smoke complexity.
+- medium: 25x25 grid, smoke, wind shifts, 2 ignitions, limited recon.
+- hard: 40x40 grid, fog of war, staggered ignition, crew loss event, more resources, longer horizon.
+
+4. Environment Data Model
+env/models.py is the type contract for the whole project. It defines:
+- enums for fuel type, fire state, movement direction, action type, and intensity bins.
+- static and dynamic cell models.
+- weather state and observed weather.
+- crew and tanker state.
+- Action, Observation, and StepResult Pydantic models.
+
+This is important because actions are validated twice:
+- Pydantic validates required fields by action type.
+- WildfireEnv performs semantic checks such as bounds and feasibility.
+
+5. How One Episode Works
+An episode begins with env.reset(task_id, seed).
+
+Reset sequence:
+- picks the tier configuration.
+- seeds NumPy RNG for reproducibility.
+- creates Grid, FireSpreadEngine, WeatherEngine, ResourceManager, and RewardCalculator.
+- resets resource and weather state.
+- ignites initial fire locations chosen to avoid obviously unwinnable starts near population centers.
+- returns the first Observation.
+
+Each env.step(action) follows a fixed sequence:
+- validate the action.
+- execute crew/tanker/firebreak/recon/idle logic.
+- spread the fire.
+- apply crew suppression at deployed crew locations.
+- evolve weather.
+- update terrain moisture.
+- propagate smoke downwind.
+- tick tanker cooldowns.
+- expire recon reveals.
+- trigger hard-mode scripted events such as staggered ignition and forced crew loss.
+- compute reward.
+- check termination.
+- build and return the next observation.
+
+This means action effects and environment dynamics are interleaved every tick. The agent does not directly control fire suppression strength; it controls where crews and resources are positioned, and suppression then occurs automatically through ResourceManager.
+
+6. Terrain and Grid Logic
+env/grid.py generates both static terrain and dynamic cell state.
+
+Static terrain includes:
+- elevation
+- fuel type
+- fuel load
+- water cells
+- population placement
+
+Terrain varies by difficulty:
+- easy is mostly flat grass.
+- medium forms a canyon/valley structure with mixed fuel.
+- hard uses more random mixed terrain, roads, water features, and larger settlements.
+
+Dynamic state includes:
+- current fire state
+- fire intensity
+- moisture
+- suppression level
+- smoke density
+- crew presence
+
+The observation builder applies two visibility systems:
+- smoke occlusion: cells with dense smoke can become UNKNOWN.
+- fog of war: on hard mode, only areas near crews or revealed by recon are visible.
+
+7. Fire Spread Model
+env/fire_spread.py implements an 8-neighbor cellular automaton inspired by Rothermel-style wildfire drivers.
+
+For each burning cell, the engine attempts to ignite neighboring cells using factors based on:
+- target fuel type and fuel load
+- source fire intensity
+- wind alignment
+- uphill/downhill slope
+- moisture
+- suppression level
+- tier-specific spread scaling
+
+After ignition attempts, burning cells progress through intensity growth, plateau, ember state, and burnout. Urban cells are treated specially with higher intensity but lower ignition probability. The model is simplified, but the interaction between terrain, wind, and suppression is coherent enough for benchmarking.
+
+8. Resource Mechanics
+env/resources.py manages the controllable operational layer.
+
+Ground crews
+- start undeployed.
+- can be deployed to safe cells.
+- can move one cell per step in 8 directions.
+- automatically suppress fire on their current cell every tick.
+- can become casualties if intensity spikes too high.
+
+Tankers
+- perform 3x3 retardant drops.
+- increase moisture and suppression while reducing fire intensity.
+- have cooldowns after use.
+- can fail to act when smoke at target is too dense.
+
+Firebreaks
+- are built by adjacent deployed crews.
+- consume a limited budget.
+- convert an unburned cell into a non-flammable FIREBREAK state.
+
+Recon
+- reveals a 10x10 area temporarily.
+- only matters on tiers with fog/hidden information.
+
+9. Reward and Termination
+env/reward.py computes a normalized weighted composite reward with these components:
+- containment
+- population safety
+- efficiency
+- speed
+- area saved
+
+Additional penalties apply for:
+- invalid actions
+- population loss
+- crew casualties
+
+A crew casualty forces reward to 0.0, which makes hard mode especially unforgiving.
+
+Episodes terminate when:
+- the time limit is reached,
+- the fire is fully gone and no delayed ignition remains pending,
+- or all population has been lost.
+
+10. Baseline Agents and Evaluation
+agents/random_agent.py is a lower-bound baseline that samples from available action types.
+
+agents/heuristic_agent.py is the stronger baseline. Its decision stack is:
+- deploy undeployed crews,
+- move endangered crews,
+- protect population,
+- call air support,
+- contain the fire perimeter,
+- use recon when worthwhile,
+- otherwise idle.
+
+scripts/evaluate.py runs both agents across easy, medium, and hard graders with repeated seeds and writes results to scripts/results.json.
+
+The graders are intentionally thin. Each grader:
+- creates a WildfireEnv,
+- resets on a fixed task,
+- repeatedly calls agent.act(obs),
+- returns the final reward.
+
+11. API and Deployment Layer
+There are two HTTP server entry points:
+- app.py at repo root
+- server/app.py inside the package
+
+Both expose similar FastAPI endpoints:
+- GET /
+- GET /health
+- POST /reset
+- POST /step
+- GET /state
+
+Docker currently launches `python app.py`, while pyproject console scripts point to `server.app:main`. Functionally they are close, but this duplication is worth cleaning up later because it creates two sources of truth for the same service.
+
+12. Inference Flow
+inference.py is the LLM evaluation script. It:
+- reads API credentials and model settings from environment variables,
+- converts the current observation into a compact prompt,
+- asks an OpenAI-compatible chat model for exactly one JSON action,
+- parses the action into the typed Action model,
+- steps the environment until completion,
+- prints structured logs for automated scoring.
+
+This is the bridge between the environment and external language models.
+
+13. Current Project State
+The project is structurally complete for a hackathon submission:
+- environment logic exists and is modular.
+- typed schemas are in place.
+- baseline agents exist.
+- graders and evaluation scripts exist.
+- REST serving and Docker deployment exist.
+
+The codebase is not organized like a production RL training project yet. There is no dedicated training loop, no test suite beyond graders, and some duplication/artifact folders remain in the repo. Still, the simulation itself is reasonably well separated and understandable, especially inside env/.
+
+15. Changes Log
+===============
+
+Before (original state):
+- app.py and server/app.py were duplicate full server implementations with no single source of truth.
+- Dockerfile pointed to `python app.py` (the duplicate).
+- __pycache__/ directories (16 files) were committed to git alongside a nested Wildfire-Containment-Simulator/ submodule and an empty {env,graders,agents,scripts}/ artifact directory.
+- .gitignore only excluded `venv`, nothing else.
+- No test suite existed.
+- requirements.txt had no test dependencies.
+- StepResult.reward was constrained to [0.0, 1.0].
+- Reward was a single normalized composite in [0, 1] with no terminal spike structure.
+
+After (Prompt 1 — Repo Cleanup & Test Scaffolding):
+- app.py reduced to a one-line shim: `from server.app import main; main()`.
+- Dockerfile CMD updated to `python server/app.py`.
+- All committed __pycache__ files removed from git index; nested submodule and brace artifact dir deleted.
+- .gitignore expanded to cover __pycache__/, *.egg-info/, venv/, .venv/, *.pyc, .pytest_cache/, .ruff_cache/, checkpoints/, results/.
+- tests/ directory created with conftest.py (fresh_env fixture) and test_smoke.py (3 passing tests: tier resets, idle stability, determinism).
+- pytest and pytest-cov added to requirements.txt.
+
+After (Prompt 2 — Reward Restructuring):
+- StepResult.reward constraint removed; rewards can now range freely (e.g. -5 to +8).
+- RewardCalculator gained two new methods:
+  - compute_step_reward(): dense delta-based reward each step (delta_containment×0.4 + delta_pop_safety×0.4 − 0.1 if redundant).
+  - compute_terminal_reward(): sparse terminal bonus (+5 if all pop saved + efficiency bonus, or −3×loss_pct; −2 stacked for crew casualty).
+- wildfire_env.py tracks _prev_action, _invalid_action_count, _crew_casualty_occurred across episodes; step() now returns step_reward + terminal_reward.
+- Legacy composite reward preserved in info["legacy_reward"] for backward compatibility.
+- tests/test_reward.py added with 4 passing tests.
+- Heuristic agent on easy tier now scores ~6.66 ± 1.64 (target +5 to +8 range confirmed).
+
+After (Prompt 3 — Observation-to-Text Serializer):
+- Created env/serialization.py with serialize_observation() producing structured LLM prompts.
+- Sections: SITUATION, GRID SUMMARY (with BFS bounding-box clustering), RESOURCES, RECENT EVENTS, Available actions.
+- BFS clustering caps at 5 regions per category; fog-of-war cells marked [?].
+- tests/test_serialization.py added with 3 passing tests.
+
+After (Prompt 4 — LLM Action Parser):
+- Created env/action_parser.py with 3-layer parse_action() fallback: JSON → regex → safe_idle.
+- _extract_json_block() strips ```json fences and surrounding text.
+- Out-of-bounds coords and hallucinated action types downgrade to IDLE, never crash.
+- tests/test_action_parser.py added with 8 passing tests.
+
+After (Prompt 5 — Replay / GIF Renderer):
+- Created env/rendering.py with render_frame() (matplotlib 800×800px, fire colors, crew markers, stats strip + wind arrow) and render_episode_gif() (imageio 5 fps).
+- Created scripts/replay.py CLI (--tier, --seed, --agent, --output); saves GIF + final PNG.
+- requirements.txt updated: matplotlib>=3.7, imageio>=2.28 added.
+- tests/test_rendering.py added with 2 passing tests (frame shape, GIF >10KB).
+
+14. Practical Takeaway
+If you want to extend this repository, the main places to work are:
+- env/: for simulation rules and observation design.
+- agents/: for better baseline or learned policies.
+- scripts/evaluate.py and inference.py: for benchmarking and external-agent experiments.
+- server/app.py or app.py: for deployment cleanup and API consistency.
+
+The project is best understood as a benchmark environment plus baseline agents, not as a full end-to-end RL training system.

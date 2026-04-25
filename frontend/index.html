@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wildfire ICS — Containment Simulator</title>
+  <meta name="description"
+        content="Interactive Wildfire Incident Command System simulator. Watch an AI agent
+                 dispatch firefighting resources across three difficulty tiers in real time.
+                 OpenEnv x Scaler Hackathon — Meta &amp; HuggingFace.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── Header ───────────────────────────────────────────────────────────────── -->
+<header id="app-header">
+  <div class="logo">🔥 WILDFIRE ICS <span>Containment Simulator</span></div>
+
+  <div class="header-controls">
+
+    <div class="control-group">
+      <label for="tier-select">TIER</label>
+      <select id="tier-select" title="Difficulty tier">
+        <option value="easy"   selected>Easy  · 15×15 · 80 steps</option>
+        <option value="medium">Medium · 25×25 · 150 steps</option>
+        <option value="hard">  Hard  · 40×40 · 300 steps</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="seed-input">SEED</label>
+      <input id="seed-input" type="number" value="42" min="0" max="999" title="Episode seed">
+    </div>
+
+    <div class="control-group">
+      <label for="agent-select">AGENT</label>
+      <select id="agent-select" title="Built-in agent">
+        <option value="heuristic" selected>Heuristic</option>
+        <option value="random">Random</option>
+      </select>
+    </div>
+
+    <button id="btn-reset" class="btn btn-secondary" title="Reset the simulation">↺ Reset</button>
+    <button id="btn-play"  class="btn btn-play"      title="Play / pause auto-step">▶ Play</button>
+    <button id="btn-step"  class="btn btn-secondary" title="Single step">Step →</button>
+
+    <div class="control-group">
+      <label for="speed-slider">SPEED</label>
+      <input id="speed-slider" type="range" min="100" max="2000" step="100" value="600"
+             title="Step delay in ms">
+      <span id="speed-label" style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);width:44px;">600ms</span>
+    </div>
+
+    <div class="toggle-wrap" title="Overlay ground-truth state (bypasses fog-of-war)">
+      <input type="checkbox" id="gt-toggle">
+      <label for="gt-toggle">Ground Truth</label>
+    </div>
+
+  </div>
+</header>
+
+<!-- ── Session warning ───────────────────────────────────────────────────────── -->
+<div id="session-banner">
+  ⚠ Single-session mode — all browser tabs share the same simulation instance.
+</div>
+
+<!-- ── Main body ──────────────────────────────────────────────────────────────── -->
+<div id="app-body">
+
+  <!-- Canvas panel -->
+  <main id="canvas-panel">
+    <div id="canvas-wrap">
+      <canvas id="grid-canvas" title="Hover over cells for details"></canvas>
+      <div id="cell-tooltip"></div>
+
+      <!-- Step progress bar -->
+      <div id="step-progress-wrap">
+        <div id="step-progress-fill"></div>
+      </div>
+
+      <!-- Terminal overlay (shown when episode ends) -->
+      <div id="terminal-overlay">
+        <div id="terminal-card">
+          <h2 class="win">✅ FIRE CONTAINED</h2>
+          <div class="stat-row">
+            <span>Containment</span>
+            <span id="terminal-containment">—</span>
+          </div>
+          <div class="stat-row">
+            <span>Population lost</span>
+            <span id="terminal-pop-lost">—</span>
+          </div>
+          <div class="stat-row">
+            <span>Total reward</span>
+            <span id="terminal-reward">—</span>
+          </div>
+          <div class="stat-row">
+            <span>Steps taken</span>
+            <span id="terminal-step">—</span>
+          </div>
+          <button id="btn-play-again" class="btn btn-primary" style="margin-top:18px;width:100%">
+            ↺ Play again
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Sidebar -->
+  <aside id="sidebar">
+
+    <!-- Stats -->
+    <section class="panel" id="stats-panel">
+      <div class="panel-title">Episode Stats</div>
+      <div class="stat-grid">
+        <div class="stat-item step-item">
+          <span class="stat-label">STEP</span>
+          <span class="stat-value" id="stat-step">— / —</span>
+        </div>
+        <div class="stat-item" id="stat-containment">
+          <span class="stat-label">CONTAINMENT</span>
+          <span class="stat-value" id="stat-containment-val">—</span>
+        </div>
+        <div class="stat-item" id="stat-burning">
+          <span class="stat-label">BURNING</span>
+          <span class="stat-value" id="stat-burning-val">—</span>
+        </div>
+        <div class="stat-item" id="stat-pop-threat">
+          <span class="stat-label">POP THREATENED</span>
+          <span class="stat-value" id="stat-pop-threat-val">—</span>
+        </div>
+        <div class="stat-item" id="stat-pop-lost">
+          <span class="stat-label">POP LOST</span>
+          <span class="stat-value" id="stat-pop-lost-val">—</span>
+        </div>
+      </div>
+      <div id="reward-bar">
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">
+          Reward <strong id="reward-total" style="color:var(--text)">0.000</strong>
+        </span>
+        <span id="reward-delta" class="reward-delta">+0.000 this step</span>
+      </div>
+    </section>
+
+    <!-- Resources -->
+    <section class="panel" id="resources-panel">
+      <div class="panel-title">Resources</div>
+      <table class="resource-table">
+        <thead>
+          <tr><th>Crew</th><th>Position / Status</th></tr>
+        </thead>
+        <tbody id="crew-tbody">
+          <tr><td colspan="2" style="color:var(--text-dim)">Reset to load…</td></tr>
+        </tbody>
+      </table>
+      <div style="height:6px"></div>
+      <table class="resource-table">
+        <thead>
+          <tr><th>Tanker</th><th>Status</th><th>Cooldown</th></tr>
+        </thead>
+        <tbody id="tanker-tbody">
+          <tr><td colspan="3" style="color:var(--text-dim)">—</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:6px;font-family:var(--font-mono);font-size:11px;color:var(--text-muted);display:flex;gap:12px">
+        <span id="firebreak-budget">FB: —</span>
+        <span id="recon-budget">RC: —</span>
+      </div>
+    </section>
+
+    <!-- Weather -->
+    <section class="panel" id="weather-panel">
+      <div class="panel-title">Weather</div>
+      <div class="weather-row">
+        <div id="wind-dial-wrap">
+          <div id="wind-dial-bg"></div>
+          <div id="wind-needle"></div>
+        </div>
+        <div class="weather-stats">
+          <div class="weather-stat-row">
+            <span class="wlabel">Wind</span>
+            <span class="wvalue" id="wind-speed-val">— km/h</span>
+          </div>
+          <div class="weather-stat-row">
+            <span class="wlabel">Dir</span>
+            <span class="wvalue" id="wind-dir-val">—°</span>
+          </div>
+          <div class="weather-stat-row">
+            <span class="wlabel">Humidity</span>
+            <span class="wvalue" id="humidity-val">—%</span>
+          </div>
+          <div style="margin-top:4px">
+            <span id="rain-badge">🌧 RAIN</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Events log -->
+    <section class="panel">
+      <div class="panel-title">Events Log</div>
+      <div id="events-log"></div>
+    </section>
+
+    <!-- Last action -->
+    <section class="panel">
+      <div class="panel-title">Last Action</div>
+      <div id="action-log">
+        <div id="last-action-type" style="color:var(--text-muted)">—</div>
+        <div id="last-action-params" style="color:var(--text-dim);margin-top:3px">—</div>
+      </div>
+    </section>
+
+    <!-- Legend -->
+    <section class="panel">
+      <div class="panel-title">Legend</div>
+      <div class="legend-grid">
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#ff9000"></div>Burning
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#e55c00"></div>Ember
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#3f3530"></div>Burned out
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#88cc88"></div>Suppressed
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#8c5a28"></div>Firebreak
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#a8d95e"></div>Grass
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#1a7a1a"></div>Timber
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#4d80e6"></div>Water
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#ccbfb2;border:1px solid #333"></div>Urban 🏘
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#b0b0b0"></div>Road
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="border:1.5px solid #58a6ff;background:transparent"></div>Populated
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:#000;border:1px solid #484f58"></div>Fog / Unknown
+        </div>
+      </div>
+    </section>
+
+    <!-- Status line -->
+    <section class="panel" style="padding:6px 12px">
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">
+        Status: <span id="status-text" style="color:var(--text)">Initializing…</span>
+      </span>
+    </section>
+
+  </aside>
+</div>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────────────── -->
+<footer id="app-footer">
+  <span>OpenEnv × Scaler Hackathon — Meta &amp; HuggingFace</span>
+  <span>
+    <a href="/docs" target="_blank" rel="noopener">API Docs (Swagger)</a>
+    &nbsp;·&nbsp;
+    <a href="/health" target="_blank" rel="noopener">Health</a>
+  </span>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

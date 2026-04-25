@@ -1,0 +1,133 @@
+name: wildfire-containment-simulator
+version: "1.0.0"
+description: >
+  A grid-based wildfire propagation simulator where an AI agent dispatches
+  limited firefighting resources (ground crews, air tankers, firebreaks) to
+  contain an evolving fire before it reaches populated zones. Features
+  Rothermel-inspired fire spread, wind-driven dynamics, smoke-based partial
+  observability, and multi-objective reward balancing containment, population
+  safety, resource efficiency, speed, and area preservation.
+
+author: Team Wildfire
+license: MIT
+
+environment:
+  class: env.wildfire_env.WildfireEnv
+  api:
+    reset:
+      description: "Initialize environment for a new episode"
+      parameters:
+        task_id:
+          type: string
+          enum: [easy, medium, hard]
+          default: easy
+        seed:
+          type: integer
+          default: 42
+      returns: Observation
+    step:
+      description: "Execute one simulation step with the given action"
+      parameters:
+        action: Action
+      returns: StepResult
+    state:
+      description: "Return full ground-truth state for grading (not for agent use)"
+      returns: dict
+
+action_space:
+  type: object
+  description: "One action per step. Six action types with typed parameters."
+  properties:
+    action_type:
+      type: string
+      enum: [deploy_crew, move_crew, drop_retardant, build_firebreak, recon_flight, idle]
+    crew_id:
+      type: string
+      description: "Required for deploy_crew, move_crew, build_firebreak"
+    tanker_id:
+      type: string
+      description: "Required for drop_retardant"
+    target_row:
+      type: integer
+      description: "Required for deploy_crew, drop_retardant, recon_flight"
+    target_col:
+      type: integer
+      description: "Required for deploy_crew, drop_retardant, recon_flight"
+    direction:
+      type: string
+      enum: [N, S, E, W, NE, NW, SE, SW]
+      description: "Required for move_crew, build_firebreak"
+    reason:
+      type: string
+      description: "Optional reason string for idle action"
+
+observation_space:
+  type: object
+  properties:
+    grid:
+      type: array
+      description: "2D array of CellObservation with fire_state, intensity_bin, smoke, population, crew presence"
+    weather:
+      type: object
+      properties:
+        wind_speed_kmh: { type: number }
+        wind_direction_deg: { type: number }
+        humidity_pct: { type: number }
+        rain_active: { type: boolean }
+    resources:
+      type: object
+      properties:
+        crews: { type: array, description: "List of CrewState (id, position, deployed, active)" }
+        tankers: { type: array, description: "List of TankerState (id, cooldown, active)" }
+        firebreak_budget: { type: integer }
+        recon_budget: { type: integer }
+    stats:
+      type: object
+      properties:
+        cells_burned: { type: integer }
+        cells_burning: { type: integer }
+        population_lost: { type: integer }
+        containment_pct: { type: number }
+        current_step: { type: integer }
+        max_steps: { type: integer }
+    recent_events:
+      type: array
+      items: { type: string }
+      maxItems: 5
+
+reward:
+  type: number
+  minimum: -8.0
+  maximum: 8.0
+  description: >
+    Decomposed reward: dense per-step signal (delta_containment * 0.4 +
+    delta_pop_safety * 0.4) plus sparse terminal reward on episode end
+    (+5 all-pop-safe, +0-2 efficiency bonus, +1 briefing adherence,
+    -3*loss_pct if pop lost, -2 crew casualty). Designed for GRPO training.
+
+tasks:
+  - id: easy
+    name: "Flatland Grass Fire"
+    description: "15x15 flat grid, single ignition, constant wind, no noise. Learn basic containment."
+    difficulty: easy
+    episode_length: 80
+
+  - id: medium
+    name: "Canyon Terrain with Wind Shifts"
+    description: "25x25 mixed terrain, two ignition points, variable wind, smoke occlusion, sensor noise."
+    difficulty: medium
+    episode_length: 150
+
+  - id: hard
+    name: "Wildland-Urban Interface Crisis"
+    description: "40x40 complex terrain, three staggered ignitions, fog-of-war, crew loss, node failures."
+    difficulty: hard
+    episode_length: 300
+
+baseline:
+  script: scripts/evaluate.py
+  agents:
+    - name: random
+      class: agents.random_agent.RandomAgent
+    - name: heuristic
+      class: agents.heuristic_agent.HeuristicAgent

@@ -1,0 +1,132 @@
+{
+  "random": {
+    "easy": {
+      "scores": [
+        8.225,
+        8.35,
+        0.39,
+        8.35,
+        7.875,
+        8.25,
+        0.36,
+        8.35,
+        6.8251,
+        5.825
+      ],
+      "mean": 6.28,
+      "std": 3.0546,
+      "mean_containment_pct": 0.0,
+      "mean_pop_saved_pct": 0.975,
+      "mean_steps": 16.1,
+      "crew_casualty_rate": 0.0,
+      "mean_time_s": 0.097
+    },
+    "medium": {
+      "scores": [
+        -1.1475,
+        8.3067,
+        8.0667,
+        7.84,
+        0.2919,
+        7.2,
+        8.3733,
+        8.3333,
+        -1.024,
+        -3.6238
+      ],
+      "mean": 4.2617,
+      "std": 4.7,
+      "mean_containment_pct": 0.0,
+      "mean_pop_saved_pct": 0.9587,
+      "mean_steps": 32.2,
+      "crew_casualty_rate": 0.0,
+      "mean_time_s": 0.468
+    },
+    "hard": {
+      "scores": [
+        -7.6189,
+        -3.9186,
+        5.3,
+        5.2999,
+        -2.8187,
+        -2.9395,
+        -5.5375,
+        -1.5395,
+        5.3,
+        5.3
+      ],
+      "mean": -0.3173,
+      "std": 4.8412,
+      "mean_containment_pct": 0.0,
+      "mean_pop_saved_pct": 0.9802,
+      "mean_steps": 44.7,
+      "crew_casualty_rate": 0.0,
+      "mean_time_s": 1.298
+    }
+  },
+  "heuristic": {
+    "easy": {
+      "scores": [
+        8.35,
+        8.35,
+        8.35,
+        8.35,
+        8.35,
+        8.35,
+        8.35,
+        8.35,
+        8.35,
+        8.35
+      ],
+      "mean": 8.35,
+      "std": 0.0,
+      "mean_containment_pct": 0.0,
+      "mean_pop_saved_pct": 1.0,
+      "mean_steps": 2.0,
+      "crew_casualty_rate": 0.0,
+      "mean_time_s": 0.021
+    },
+    "medium": {
+      "scores": [
+        5.5,
+        8.3733,
+        8.3733,
+        8.3733,
+        8.3067,
+        7.94,
+        8.3733,
+        8.3733,
+        7.8467,
+        7.2933
+      ],
+      "mean": 7.8753,
+      "std": 0.8609,
+      "mean_containment_pct": 0.0,
+      "mean_pop_saved_pct": 1.0,
+      "mean_steps": 11.6,
+      "crew_casualty_rate": 0.0,
+      "mean_time_s": 0.214
+    },
+    "hard": {
+      "scores": [
+        6.5001,
+        -5.5396,
+        6.0,
+        4.6468,
+        6.8,
+        5.8,
+        5.8,
+        4.8001,
+        5.6,
+        5.9
+      ],
+      "mean": 4.6307,
+      "std": 3.4471,
+      "mean_containment_pct": 0.0,
+      "mean_pop_saved_pct": 0.9988,
+      "mean_steps": 41.4,
+      "crew_casualty_rate": 0.0,
+      "mean_time_s": 1.384
+    }
+  }
+}

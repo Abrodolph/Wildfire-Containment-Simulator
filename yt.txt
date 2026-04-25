@@ -1,0 +1,47 @@
+Shot-by-Shot Script
+[0:00–0:08] — COLD OPEN (Hook)
+[SHOT: A real life wildfire is shown spreading (potentially displaying humans trying to deal with it, this transitions to a GIF replay of wildfire spreading across the grid, crews moving based on our application]
+VO: "Wildfire spreading. Civilian zones at risk. Limited resources. No second chances."
+[SHOT: Title card fades in — "Wildfire Containment Simulator"]
+VO: "What if an AI could be trained to handle this?"
+
+[0:08–0:20] — Problem Statement
+[SHOT: Simple diagram — grid with fire cells, population zones, crew icons]
+VO: "We built a fully-featured wildfire simulation for the OpenEnv hackathon. An LLM acts as Incident Commander — reading operational briefings, dispatching fire crews, calling air tankers, and building firebreaks — all in real-time, across a 300-step episode."
+
+[0:20–0:38] — The Environment
+[SHOT: Code snippet — env.reset("hard", seed=42) → GIF of Hard tier 40×40 grid]
+VO: "Three difficulty tiers: Easy is a 15x15 flatland fire. Hard is a 40x40 wildland-urban interface with fog-of-war, staggered ignitions, and mid-episode crew casualties."
+[SHOT: Annotated grid showing smoke, fog-of-war, crew positions, fire clusters]
+VO: "Fire spreads using a Rothermel-inspired model — wind direction, slope, fuel load, moisture all matter. The agent only sees what's not hidden by smoke."
+
+[0:38–0:55] — The Actions & Observations
+[SHOT: Terminal showing serialized observation text prompt scrolling]
+VO: "Each step, the observation is converted into a structured text prompt — fire cluster locations, resource status, recent events. The model responds with a single JSON action."
+[SHOT: JSON action example on screen — {"action_type": "drop_retardant", "tanker_id": "tanker_0", "target_row": 12, "target_col": 8}]
+VO: "Six action types: deploy crews, move them, drop retardant, build firebreaks, recon flight, or idle. Invalid JSON? The 3-layer parser falls back to safe idle — the loop never breaks."
+
+[0:55–1:12] — Training with GRPO
+[SHOT: Training curve plot — reward vs steps, tier promotion markers visible]
+VO: "We trained Qwen-2.5-1.5B using GRPO — Group Relative Policy Optimization — on a T4 GPU. The reward is decomposed: dense per-step signals for containment and population safety, plus a sparse +5 bonus if all civilians survive."
+[SHOT: Curriculum diagram: Easy → Medium → Hard with arrows]
+VO: "A curriculum controller automatically promotes the agent as it improves — just like training a real firefighter."
+
+[1:12–1:35] — Results
+[SHOT: Comparison table — Random / Heuristic / Trained LLM across three tiers]
+VO: "Our trained model reaches a mean reward of ~4.8 on Easy and ~3.9 on Hard — approaching the hand-coded heuristic baseline, without a single line of explicit strategy. Just reward signal."
+[SHOT: Side-by-side GIF replay — heuristic agent vs. trained LLM on medium tier]
+VO: "The model learns to protect population zones first, use tankers selectively, and build firebreaks ahead of the spread — behaviors we never explicitly programmed."
+
+[1:35–1:50] — Architecture Highlights
+[SHOT: Architecture diagram — env → serializer → LLM → parser → env]
+VO: "Built on Pydantic for typed validation end-to-end. Exposed as a FastAPI REST server so any model can plug in with zero Python imports. Fully OpenEnv compliant."
+[SHOT: HuggingFace Space page]
+VO: "Live on HuggingFace Spaces right now."
+
+[1:50–2:00] — Close
+[SHOT: Final GIF — fire successfully contained, population zones intact]
+VO: "Long-horizon planning. Instruction following. Curriculum learning. All in 1.5 billion parameters."
+[SHOT: Title card + GitHub/HF links]
+VO: "Wildfire Containment Simulator — OpenEnv Hackathon, Theme 2."
+

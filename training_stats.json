@@ -1,0 +1,252 @@
+[
+  {
+    "step": 0,
+    "tier": "easy",
+    "mean_reward": 4.6361968749999996
+  },
+  {
+    "step": 1,
+    "tier": "easy",
+    "mean_reward": 3.6131
+  },
+  {
+    "step": 2,
+    "tier": "easy",
+    "mean_reward": 4.44313125
+  },
+  {
+    "step": 3,
+    "tier": "easy",
+    "mean_reward": 3.612159375
+  },
+  {
+    "step": 4,
+    "tier": "easy",
+    "mean_reward": 4.07293125
+  },
+  {
+    "step": 5,
+    "tier": "easy",
+    "mean_reward": 4.179428125
+  },
+  {
+    "step": 6,
+    "tier": "easy",
+    "mean_reward": 4.8842625
+  },
+  {
+    "step": 7,
+    "tier": "easy",
+    "mean_reward": 4.94484375
+  },
+  {
+    "step": 8,
+    "tier": "easy",
+    "mean_reward": 4.66345625
+  },
+  {
+    "step": 9,
+    "tier": "easy",
+    "mean_reward": 1.700353125
+  },
+  {
+    "step": 10,
+    "tier": "medium",
+    "mean_reward": 4.143609375
+  },
+  {
+    "step": 11,
+    "tier": "medium",
+    "mean_reward": 3.876746875
+  },
+  {
+    "step": 12,
+    "tier": "medium",
+    "mean_reward": 3.6082
+  },
+  {
+    "step": 13,
+    "tier": "medium",
+    "mean_reward": 3.866484375
+  },
+  {
+    "step": 14,
+    "tier": "medium",
+    "mean_reward": 4.924359375
+  },
+  {
+    "step": 15,
+    "tier": "medium",
+    "mean_reward": 4.655846875
+  },
+  {
+    "step": 16,
+    "tier": "medium",
+    "mean_reward": 3.366853125
+  },
+  {
+    "step": 17,
+    "tier": "medium",
+    "mean_reward": 4.41435
+  },
+  {
+    "step": 18,
+    "tier": "medium",
+    "mean_reward": 3.6337437500000003
+  },
+  {
+    "step": 19,
+    "tier": "medium",
+    "mean_reward": 3.867175
+  },
+  {
+    "step": 20,
+    "tier": "hard",
+    "mean_reward": 3.59474375
+  },
+  {
+    "step": 21,
+    "tier": "hard",
+    "mean_reward": 4.35543125
+  },
+  {
+    "step": 22,
+    "tier": "hard",
+    "mean_reward": 5.457475
+  },
+  {
+    "step": 23,
+    "tier": "hard",
+    "mean_reward": 3.822665625
+  },
+  {
+    "step": 24,
+    "tier": "hard",
+    "mean_reward": 5.462053125
+  },
+  {
+    "step": 25,
+    "tier": "hard",
+    "mean_reward": 4.0768281250000005
+  },
+  {
+    "step": 26,
+    "tier": "hard",
+    "mean_reward": 4.659084375
+  },
+  {
+    "step": 27,
+    "tier": "hard",
+    "mean_reward": 4.084115625
+  },
+  {
+    "step": 28,
+    "tier": "hard",
+    "mean_reward": 3.2986375
+  },
+  {
+    "step": 29,
+    "tier": "hard",
+    "mean_reward": 3.37009375
+  },
+  {
+    "step": 30,
+    "tier": "hard",
+    "mean_reward": 4.91204375
+  },
+  {
+    "step": 31,
+    "tier": "hard",
+    "mean_reward": 4.66991875
+  },
+  {
+    "step": 32,
+    "tier": "hard",
+    "mean_reward": 3.291646875
+  },
+  {
+    "step": 33,
+    "tier": "hard",
+    "mean_reward": 3.297171875
+  },
+  {
+    "step": 34,
+    "tier": "hard",
+    "mean_reward": 3.32094375
+  },
+  {
+    "step": 35,
+    "tier": "hard",
+    "mean_reward": 5.429046875
+  },
+  {
+    "step": 36,
+    "tier": "hard",
+    "mean_reward": 4.123196875
+  },
+  {
+    "step": 37,
+    "tier": "hard",
+    "mean_reward": 4.913678125
+  },
+  {
+    "step": 38,
+    "tier": "hard",
+    "mean_reward": 3.323775
+  },
+  {
+    "step": 39,
+    "tier": "hard",
+    "mean_reward": 4.94625625
+  },
+  {
+    "step": 40,
+    "tier": "hard",
+    "mean_reward": 3.8765375
+  },
+  {
+    "step": 41,
+    "tier": "hard",
+    "mean_reward": 4.068646875
+  },
+  {
+    "step": 42,
+    "tier": "hard",
+    "mean_reward": 4.87620625
+  },
+  {
+    "step": 43,
+    "tier": "hard",
+    "mean_reward": 4.4294125
+  },
+  {
+    "step": 44,
+    "tier": "hard",
+    "mean_reward": 5.183884375
+  },
+  {
+    "step": 45,
+    "tier": "hard",
+    "mean_reward": 3.28811875
+  },
+  {
+    "step": 46,
+    "tier": "hard",
+    "mean_reward": 4.952590625
+  },
+  {
+    "step": 47,
+    "tier": "hard",
+    "mean_reward": 3.879625
+  },
+  {
+    "step": 48,
+    "tier": "hard",
+    "mean_reward": 5.212665625
+  },
+  {
+    "step": 49,
+    "tier": "hard",
+    "mean_reward": 4.932653125
+  }
+]

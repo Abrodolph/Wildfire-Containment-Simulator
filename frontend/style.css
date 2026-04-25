@@ -1,0 +1,567 @@
+/* ============================================================
+   Wildfire ICS — Emergency Operations Dashboard
+   style.css  |  No external font imports (system fonts only)
+   ============================================================ */
+
+/* ── Reset & tokens ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:           #0d1117;
+  --surface:      #161b22;
+  --surface-2:    #1c2128;
+  --border:       #30363d;
+  --border-hi:    #484f58;
+
+  --fire:         #ff6b35;
+  --fire-dim:     #c44a1a;
+  --ember:        #e55c00;
+  --safe:         #3fb950;
+  --warn:         #d29922;
+  --crit:         #f85149;
+  --fog:          #3d444d;
+
+  --text:         #e6edf3;
+  --text-muted:   #7d8590;
+  --text-dim:     #484f58;
+
+  --font-mono:    'Courier New', Consolas, 'Lucida Console', monospace;
+  --font-ui:      system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius:       6px;
+  --radius-sm:    4px;
+  --glow-fire:    0 0 18px rgba(255, 107, 53, 0.45);
+  --glow-safe:    0 0 12px rgba(63, 185, 80, 0.35);
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+
+/* ── Header ──────────────────────────────────────────────────── */
+#app-header {
+  height: 54px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  /* subtle scan-line texture */
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255,255,255,0.015) 2px,
+    rgba(255,255,255,0.015) 4px
+  );
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+#app-header .logo {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: bold;
+  color: var(--fire);
+  letter-spacing: 2px;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+#app-header .logo span {
+  color: var(--text-muted);
+  font-size: 11px;
+  letter-spacing: 0;
+  font-weight: normal;
+  margin-left: 8px;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── Form controls ───────────────────────────────────────────── */
+select, input[type="number"] {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  height: 30px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+select:focus, input[type="number"]:focus {
+  border-color: var(--fire);
+}
+select { cursor: pointer; }
+
+input[type="number"] { width: 72px; }
+
+label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--fire-dim);
+  border-color: var(--fire);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--fire); box-shadow: var(--glow-fire); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-secondary {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.btn-secondary:hover { border-color: var(--border-hi); background: var(--surface); }
+.btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-play {
+  background: #1a4a1a;
+  border-color: var(--safe);
+  color: var(--safe);
+  min-width: 80px;
+}
+.btn-play:hover { background: #225522; box-shadow: var(--glow-safe); }
+.btn-play.playing {
+  background: #4a1a1a;
+  border-color: var(--crit);
+  color: var(--crit);
+}
+
+/* ── Ground truth toggle ─────────────────────────────────────── */
+.toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.toggle-wrap input[type="checkbox"] {
+  accent-color: var(--warn);
+  width: 14px; height: 14px;
+  cursor: pointer;
+}
+
+/* ── Speed slider ────────────────────────────────────────────── */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 80px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--fire);
+  cursor: pointer;
+}
+
+/* ── Session warning banner ──────────────────────────────────── */
+#session-banner {
+  background: #2a1f0a;
+  border-bottom: 1px solid var(--warn);
+  color: var(--warn);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  text-align: center;
+  padding: 3px 16px;
+  flex-shrink: 0;
+}
+
+/* ── Main layout ─────────────────────────────────────────────── */
+#app-body {
+  display: flex;
+  height: calc(100vh - 54px - 24px); /* header + banner */
+  overflow: hidden;
+}
+
+/* ── Canvas panel ────────────────────────────────────────────── */
+#canvas-panel {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  position: relative;
+}
+
+#canvas-wrap {
+  position: relative;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: box-shadow 0.4s;
+}
+#canvas-wrap.fire-active {
+  box-shadow: var(--glow-fire);
+  border-color: var(--fire-dim);
+  animation: pulse-border 2s ease-in-out infinite;
+}
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 8px rgba(255,107,53,0.3); }
+  50%       { box-shadow: 0 0 24px rgba(255,107,53,0.65); }
+}
+
+#grid-canvas { display: block; image-rendering: pixelated; }
+
+/* Tooltip overlay (shows cell info on hover) */
+#cell-tooltip {
+  position: absolute;
+  background: rgba(13,17,23,0.9);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+  pointer-events: none;
+  display: none;
+  white-space: nowrap;
+  z-index: 5;
+}
+
+/* Terminal overlay (end of episode) */
+#terminal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(13,17,23,0.88);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+#terminal-overlay.show { display: flex; }
+#terminal-card {
+  background: var(--surface);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--radius);
+  padding: 28px 36px;
+  text-align: center;
+  font-family: var(--font-mono);
+  max-width: 360px;
+}
+#terminal-card h2 { font-size: 20px; margin-bottom: 12px; }
+#terminal-card h2.win  { color: var(--safe); }
+#terminal-card h2.loss { color: var(--crit); }
+#terminal-card .stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+#terminal-card .stat-row span:last-child { color: var(--text); }
+#terminal-card .btn { margin-top: 18px; width: 100%; justify-content: center; display: flex; align-items: center; }
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+#sidebar {
+  width: 290px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  background: var(--surface);
+}
+
+.panel {
+  border-bottom: 1px solid var(--border);
+  padding: 10px 12px;
+}
+
+.panel-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+}
+
+/* ── Stats panel ─────────────────────────────────────────────── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.stat-item {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 9px;
+}
+.stat-item .stat-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  display: block;
+}
+.stat-item .stat-value {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--text);
+  transition: color 0.3s;
+}
+
+.stat-item.step-item { grid-column: 1 / -1; }
+.stat-item.step-item .stat-value { font-size: 14px; }
+
+#stat-containment .stat-value { color: var(--safe); }
+#stat-burning     .stat-value { color: var(--fire); }
+#stat-pop-threat  .stat-value { color: var(--warn); }
+#stat-pop-lost    .stat-value { color: var(--crit); }
+
+/* Reward display */
+#reward-bar {
+  margin-top: 6px;
+  padding: 6px 9px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+}
+#reward-bar .reward-delta { color: var(--text-muted); }
+#reward-bar .reward-delta.positive { color: var(--safe); }
+#reward-bar .reward-delta.negative { color: var(--crit); }
+
+/* ── Resources panel ─────────────────────────────────────────── */
+.resource-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.resource-table th {
+  text-align: left;
+  color: var(--text-dim);
+  font-weight: normal;
+  padding-bottom: 4px;
+  font-size: 10px;
+}
+.resource-table td {
+  padding: 3px 2px;
+  color: var(--text);
+  border-top: 1px solid var(--border);
+}
+.resource-table tr.crew-deployed td { color: var(--safe); }
+.resource-table tr.crew-lost td { color: var(--crit); text-decoration: line-through; }
+.resource-table tr.crew-idle td { color: var(--text-muted); }
+
+.tanker-row td { vertical-align: middle; }
+.cooldown-bar-wrap {
+  width: 60px;
+  height: 5px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.cooldown-bar-fill {
+  height: 100%;
+  background: var(--warn);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+.tanker-ready { color: var(--safe) !important; }
+.tanker-charging { color: var(--warn) !important; }
+
+/* ── Weather panel ───────────────────────────────────────────── */
+#weather-panel .weather-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+}
+#wind-dial-wrap {
+  position: relative;
+  width: 54px; height: 54px;
+  flex-shrink: 0;
+}
+#wind-dial-bg {
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface-2);
+}
+#wind-needle {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 2px; height: 22px;
+  background: var(--fire);
+  transform-origin: bottom center;
+  transform: translateX(-50%) translateY(-100%) rotate(0deg);
+  border-radius: 1px;
+  transition: transform 0.6s ease;
+}
+.weather-stats {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.weather-stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+.weather-stat-row .wlabel { color: var(--text-muted); }
+.weather-stat-row .wvalue { color: var(--text); }
+
+#rain-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  background: #1a3a5c;
+  color: #58a6ff;
+  border: 1px solid #1f6feb;
+  display: none;
+}
+#rain-badge.active { display: inline-block; }
+
+/* ── Events log ──────────────────────────────────────────────── */
+#events-log {
+  max-height: 160px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.event-entry {
+  padding: 3px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  animation: slide-in 0.2s ease-out;
+}
+.event-entry:first-child { color: var(--text); }
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Action log ──────────────────────────────────────────────── */
+#action-log {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+#last-action-type {
+  color: var(--fire);
+  font-weight: bold;
+  font-size: 12px;
+}
+#last-action-params {
+  color: var(--text-muted);
+  margin-top: 3px;
+  word-break: break-all;
+}
+
+/* ── Legend panel ────────────────────────────────────────────── */
+.legend-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.legend-swatch {
+  width: 12px; height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+#app-footer {
+  height: 24px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+#app-footer a { color: var(--text-dim); text-decoration: none; }
+#app-footer a:hover { color: var(--fire); }
+
+/* ── Step counter progress bar ───────────────────────────────── */
+#step-progress-wrap {
+  height: 3px;
+  background: var(--border);
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+}
+#step-progress-fill {
+  height: 100%;
+  background: var(--fire);
+  transition: width 0.3s;
+  width: 0%;
+}
+
+/* ── Responsive tweak ────────────────────────────────────────── */
+@media (max-width: 900px) {
+  #sidebar { width: 240px; }
+}
+@media (max-width: 680px) {
+  #app-body { flex-direction: column; }
+  #sidebar { width: 100%; height: 240px; flex-direction: row; overflow-x: auto; }
+  html, body { overflow: auto; }
+}

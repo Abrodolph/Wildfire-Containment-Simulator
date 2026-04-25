@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+
+# Test, coverage, and tooling caches
+.pytest_cache*/
+.pytest_tmp/
+pytest-cache-files-*/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Local environment/config
+.env
+.env.*
+!.env.example
+*.local
+.claude/settings.local.json
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+
+# Frontend dependencies/build output
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+# Generated outputs
+results/
+outputs/
+runs/
+wandb/
+mlruns/
+
+# Model checkpoints and training artifacts
+checkpoints/
+checkpoint*/
+checkpints*/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+
+# Generated media, but keep curated demo assets trackable
+*.mp4
+*.mov
+*.webm
+*.avi
+!demos/*.gif
+!demos/*.png
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
