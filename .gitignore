@@ -83,3 +83,9 @@ AGENTS.md
 *External*Meta*OpenEnv*Hackathon*.pdf
 private_notes/
 .private/
+
+# Local scrapes / dumps
+data/
+
+# Training bundle artifacts (regenerate; do not commit)
+sft_*.zip
