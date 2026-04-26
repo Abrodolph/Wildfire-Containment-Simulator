@@ -64,15 +64,15 @@ Each of those decisions came from running the thing and watching it fail in a sp
 
 ## What I want the judges to take away
 
-There were nights, there are always nights, where the project felt absurd. A solo participant. First RL project. A custom environment. A custom reward decomposition. SFT, then GRPO, on a 7B model, on Colab, with a curriculum controller and a callback that rebuilds the dataset mid-run. I made all the canonical mistakes, including, briefly, training on a dataset whose seeds did not match the seeds the reward function rolled out against, which is the GRPO equivalent of grading a student's geography exam by asking them about a different country. I found it the way you always find these things, by squinting at a sample completion at 2 a.m. and thinking *wait, that does not match*.
+There were nights, there are always nights, where the project felt absurd. A solo participant. First RL project. A custom environment. Not to mention I travelled here from Delhi; god bless my dad for booking these expensive flight tickets (thanks trump). A custom reward decomposition. SFT, then GRPO, on a 7B model, on Colab, with a curriculum controller and a callback that rebuilds the dataset mid-run. I made all the canonical mistakes, including, briefly, training on a dataset whose seeds did not match the seeds the reward function rolled out against, which is the GRPO equivalent of grading a student's geography exam by asking them about a different country. I found it the way you always find these things, by squinting at a sample completion at 2 a.m. and thinking *wait, that does not match*.
 
 But I learned more in three weeks than I would have from a semester of well-mannered tutorials. Reinforcement learning, as a sub-field, is unforgiving in a productive way. It does not let you confuse "the loss is going down" with "the model is doing the thing". You have to look. You have to read rollouts. You have to talk to your model the way an IC talks to a crew chief, patiently, specifically, willing to be told the plan is wrong.
 
-If a judge reads this far, I want to be candid about what I think the contribution actually is. The trained model does not beat the heuristic on hard tier. It approaches it on medium (+5.74 vs. +6.31) and falls short on hard, and I would rather submit honest numbers than goose them. The headline is not the leaderboard, it is the *artifact*: a typed, OpenEnv-compliant environment with a Rothermel-flavoured spread model, a decomposed reward built for GRPO, a serialiser that keeps prompt length sub-linear in grid size, a parser that refuses to crash on malformed completions, and an end-to-end training recipe somebody else can pick up tomorrow and improve on. Plus a frank post-mortem of every bug I hit along the way, which is, I suspect, more useful to the next person trying this than another tenth of a reward point would be.
+If a judge reads this far, I want to be candid about what I think the contribution actually is. The trained model does not beat the heuristic on hard tier. It approaches it on medium (+5.74 vs. +6.31) and falls short on hard, and I would rather submit honest numbers than goose them. The headline is not the leaderboard, it is the *artifact*: a typed, OpenEnv-compliant environment with a Rothermel-flavoured spread model, a decomposed reward built for GRPO, a parser that refuses to crash on malformed completions, and an end-to-end training recipe somebody else can pick up tomorrow and improve on. Plus a frank post-mortem of every bug I hit along the way, which is, I suspect, more useful to the next person trying this than another tenth of a reward point would be.
 
 I started this project because of a one-minute clip about somebody else's bad night. I am finishing it knowing more about reinforcement learning, more about wildland fire science, and a little more about my own tolerance for ambiguity than I did three weeks ago.
 
-The sticky note is staying on the monitor.
+The sticky note is staying on the monitor. Need a new monitor tho!
 
 ---
 
@@ -92,7 +92,7 @@ A short post-mortem, because the bugs are the part of the story you actually lea
 
 - Live environment on Hugging Face: [`Eshit/Wildfire-Containment-Simulator`](https://huggingface.co/spaces/Eshit/Wildfire-Containment-Simulator)
 - Source: [`Abrodolph/Wildfire-Containment-Simulator`](https://github.com/Abrodolph/Wildfire-Containment-Simulator)
-- Trained model: [`Eshit/wildfire-grpo-7b`](https://huggingface.co/Eshit/wildfire-grpo-7b)
+- Trained model: [`Eshit/wildfire-grpo-7b`]([https://huggingface.co/Eshit/wildfire-grpo-7b](https://huggingface.co/spaces/Eshit/Wildfire-Containment-Simulator/blob/main/training/grpo_v2_colab.ipynb))
 - W&B run: [`saini-eshit-/wildfire-grpo/runs/dnz56kuu`](https://wandb.ai/saini-eshit-/wildfire-grpo/runs/dnz56kuu)
 - GRPO notebook: [`training/grpo_v2_colab.ipynb`](training/grpo_v2_colab.ipynb)
 - SFT notebook: [`training/sft_colab.ipynb`](training/sft_colab.ipynb)
