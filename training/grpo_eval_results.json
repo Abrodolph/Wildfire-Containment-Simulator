@@ -1,0 +1,90 @@
+{
+  "trained": {
+    "easy": {
+      "mean": 5.126686666666666,
+      "std": 3.900705914893981,
+      "pop_saved_pct": 86.66666666666667,
+      "json_success_rate": 98.52941176470588
+    },
+    "medium": {
+      "mean": 5.7353000000000005,
+      "std": 3.070706015886249,
+      "pop_saved_pct": 97.14285714285715,
+      "json_success_rate": 99.77900552486187
+    },
+    "hard": {
+      "mean": 2.144273333333333,
+      "std": 2.867108504973066,
+      "pop_saved_pct": 92.48062015503875,
+      "json_success_rate": 99.17695473251028
+    }
+  },
+  "baselines": {
+    "random": {
+      "easy": {
+        "scores": [7.7749, 7.7751, 7.775, 7.775, 0.04],
+        "mean": 6.228,
+        "std": 3.094,
+        "mean_containment_pct": 1.0,
+        "mean_pop_saved_pct": 0.92,
+        "mean_steps": 25.8,
+        "crew_casualty_rate": 0.0,
+        "mean_time_s": 0.067
+      },
+      "medium": {
+        "scores": [-1.7044, -1.0029, 1.0762, 0.7527, 7.4403],
+        "mean": 1.3124,
+        "std": 3.2367,
+        "mean_containment_pct": 1.0,
+        "mean_pop_saved_pct": 0.7365,
+        "mean_steps": 72.0,
+        "crew_casualty_rate": 0.0,
+        "mean_time_s": 0.676
+      },
+      "hard": {
+        "scores": [7.8668, 1.3602, -0.7466, 1.0443, 1.2813],
+        "mean": 2.1612,
+        "std": 2.9554,
+        "mean_containment_pct": 1.0,
+        "mean_pop_saved_pct": 0.9023,
+        "mean_steps": 84.6,
+        "crew_casualty_rate": 0.0,
+        "mean_time_s": 1.301
+      }
+    },
+    "heuristic": {
+      "easy": {
+        "scores": [7.6749, 7.575, 7.475, 7.475, 7.4749],
+        "mean": 7.535,
+        "std": 0.08,
+        "mean_containment_pct": 1.0,
+        "mean_pop_saved_pct": 1.0,
+        "mean_steps": 26.6,
+        "crew_casualty_rate": 0.0,
+        "mean_time_s": 0.118
+      },
+      "medium": {
+        "scores": [7.6001, 7.7001, 7.8, 7.7, 0.7683],
+        "mean": 6.3137,
+        "std": 2.7734,
+        "mean_containment_pct": 1.0,
+        "mean_pop_saved_pct": 0.9746,
+        "mean_steps": 46.2,
+        "crew_casualty_rate": 0.0,
+        "mean_time_s": 0.48
+      },
+      "hard": {
+        "scores": [7.8668, 7.867, 0.9443, 7.6667, -0.6696],
+        "mean": 4.735,
+        "std": 3.7892,
+        "mean_containment_pct": 1.0,
+        "mean_pop_saved_pct": 0.9279,
+        "mean_steps": 83.2,
+        "crew_casualty_rate": 0.0,
+        "mean_time_s": 1.487
+      }
+    }
+  },
+  "eval_seeds": [42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56],
+  "model": "Eshit/wildfire-grpo-7b"
+}
