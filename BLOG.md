@@ -1,249 +1,101 @@
-# Teaching a 1.5B-class Language Model to Fight Wildfires with GRPO
+# The Long Walk to an Incident Commander
 
-*A frank write-up of what we built, what worked, and what broke — for the Meta OpenEnv Hackathon, Theme 2: Long-Horizon Planning & Instruction Following.*
-
-> **TL;DR.** We built a partially-observable wildfire-response RL environment on OpenEnv, generated 4,300 supervised examples from a hand-coded heuristic, did a 1-epoch SFT warm-up on Qwen-2.5-7B-Instruct, then ran GRPO with a curriculum that auto-promotes the agent across three difficulty tiers. The trained agent reaches **+5.74** mean reward on Medium tier (heuristic: +6.31; random: +1.31) and **+2.14** on Hard (heuristic: +4.74; random: +2.16), with 99%+ JSON success rate across all tiers. The model auto-promoted through all three curriculum tiers in just 63 of 150 training steps. Code, env, training notebooks, and a live HF Space are all linked from the [`README`](README.md).
+*How a stray clip about the LA fires turned into my first reinforcement learning project.*
 
 ---
 
-## Why wildfires?
+## The empty shortlist
 
-Most RL environments for language models are puzzles, games, or code tasks. We wanted something with three properties at once:
+When the OpenEnv hackathon was announced, I did not have an idea.
 
-1. **Long-horizon, sparse-terminal reward.** A real plan has to survive 100+ steps before the result lands.
-2. **Partial observability that *gets worse* during the episode.** Smoke spreads, recon expires, fog-of-war hides what hasn't been scouted recently.
-3. **An explicit instruction-following channel.** A first-step "operational briefing" the agent must read, internalize, and adhere to — and a reward term that rewards adherence.
+I had a shortlist, sure, the kind every hobbyist machine-learning person carries around in the back of their head. A code-review agent. A structured-output LLM judge. Something to do with compliance reports, an idea I abandoned within a day because the moment I tried to write a one-paragraph pitch I started yawning. There is a useful diagnostic in that, I think. If your own pitch bores you in draft, it will bore everybody else louder.
 
-Wildfire incident command hits all three. An incident commander gets a briefing, has hard resource limits (crews, air tankers, firebreak budget, recon), and has to balance speed vs. coverage vs. civilian safety while wind, slope, and humidity all change underneath them. We turned that into a structured grid environment with typed actions, an `OperationalBriefing` on reset, and a decomposed reward — and then trained an LLM to play the role of the IC.
+So I scrolled. Embarrassingly enough, that is where the project really starts.
 
----
+It was around one in the morning, and I was doom-scrolling YouTube shorts in the kind of fugue where individual videos stop registering and become a slurry of noise. An NBC Bay Area clip drifted past. Then aerial footage of the LA fires, hills the colour of rust, voice-overs droning numbers about acres and containment percentages. What I remember is the way one reporter said, almost in passing, *"the incident commander has decided to pull crews back"*. A single human being, deciding at three in the morning their time, where to put the people, where to drop the retardant, which neighbourhoods to write off. I closed the app, went to bed, and didn't think about it again for a couple of days.
 
-## The environment, top down
+But it kept coming back. Quietly, at first, while I was supposed to be reading the hackathon brief. The themes mapped almost too cleanly onto the shape of the thing that incident commander on the clip was doing: incomplete information, hard resource limits, weather you cannot argue with, civilians you cannot disappoint. I scribbled *"Wildfire Incident Commander as an RL task"* on a sticky note and pressed it to the side of my monitor. The note is still there, slightly buckled at the corner now, with coffee on it.
 
-The environment is OpenEnv-compliant: `reset(task_id, seed) → Observation`, `step(Action) → StepResult`, `state() → dict`. Three difficulty tiers, all runnable on the same code path:
-
-```
-Easy   →  15×15 flat grid, 1 ignition, constant wind, 80 steps
-Medium →  25×25 canyon terrain, 2 ignitions, wind shifts, smoke,  150 steps
-Hard   →  40×40 wildland-urban interface, staggered ignitions,
-          fog-of-war, mid-episode crew casualty, 300 steps
-```
-
-The agent never directly applies suppression. It positions resources — crews, tankers, firebreaks, recon flights — and the environment computes the resulting fire dynamics each tick. The 11-step tick pipeline is fully deterministic given a seed:
-
-```
-validate(action) → execute(action) → spread_fire → apply_suppression
-→ evolve_weather → update_moisture → propagate_smoke → tick_cooldowns
-→ expire_recon → trigger_scripted_events → compute_reward → check_termination
-```
-
-**Fire spreads via a Rothermel-inspired cellular automaton.** Every burning cell rolls against each of its 8 neighbors:
-
-```
-P(ignite) = base_rate × fuel_factor × wind_factor × slope_factor
-            × (1 − moisture) × (1 − suppression) × tier_scale
-```
-
-Wind alignment dominates spread direction. Slope speeds uphill spread. Suppression from crew presence and tanker drops is *spatial* — it only affects the cells you've actually committed resources to.
+There was one problem with this plan. I had never actually trained a reinforcement learning policy.
 
 ---
 
-## Speaking the agent's language
+## How I got into RL in the first place
 
-A 7B chat model can't natively read a 40×40 grid of cell objects. So we built two adapters between the env and the LLM:
+My exposure to RL up to this point was almost entirely cinematic.
 
-**`serialize_observation()`** — Turns the raw `Observation` into a structured prompt:
-- BFS-clusters fire cells into bounding boxes ("3 BURNING clusters near rows 7–12, cols 3–8") so prompt length is `O(regions)` not `O(cells)`.
-- Lists resource state with cooldown warnings.
-- Surfaces the last 5 notable events.
-- Notes weather noise levels explicitly so the model knows readings are not exact.
+I had grown up on those grainy DeepMind Atari videos, the ones where a tiny green paddle slowly figures out it can tunnel through the side of a Breakout wall and bounce the ball around behind it. I remember rewatching that clip on loop the first time I saw it and feeling something genuinely uncanny. The agent had not been told about the tunnel. Nobody coded the tunnel. It just appeared, somewhere in the loss landscape, as the cheapest way to keep the ball alive.
 
-**`parse_action()`** — A 3-layer LLM-output → `Action` mapper:
-1. Strip code fences, find a JSON object, parse it directly.
-2. If JSON parsing fails: regex-extract `action_type` and per-action fields.
-3. Final fallback: return a safe `IDLE`. The training loop never breaks on bad model output.
-
-That parser fallback is also a **defense against reward hacking** — there's no clever output that crashes the env or skips a step. Worst case the model burns a step on `IDLE` and pays the small step penalty.
+From there it was the usual pipeline. The *AlphaGo* documentary, late one weekend. OpenAI's hide-and-seek video where the agents start surfing on boxes their opponents are still trying to lock down. Two Minute Papers explaining AlphaStar and OpenAI Five with that delighted Hungarian cadence. I read Sutton and Barto in the way most people read Sutton and Barto, which is to say, three chapters in great detail and the rest in spirit. I read the Mnih DQN paper, the Schulman PPO paper, eventually the DeepSeek-R1 work and the GRPO derivations, and I poked at a couple of CartPole notebooks. But I had never actually trained a policy that mattered. RL had this folkloric reputation around it, finicky, expensive, vibes-based, the part of the deep-learning toolbox most likely to silently fail in interesting ways. I had a healthy fear of the field.
 
 ---
 
-## The reward, designed for GRPO
+## The confession
 
-GRPO computes advantages by comparing rollout rewards within a group of completions for the same prompt. If your reward signal is too narrow (e.g. all rewards in `[0, 1]`), the advantages collapse and the gradient washes out. We deliberately built a wide-range, decomposed reward.
+So the confession I should make early is that this was my first real reinforcement learning project. OpenEnv was even newer to me. I came in cold.
 
-**Per-step (dense):**
-```
-step_reward = 0.4·Δcontainment + 0.4·Δpop_safety − 0.1·redundant_action
-```
+What kept me from bailing in the first three days was, paradoxically, exactly that newness. I was already accepting I would be uncomfortable. I figured I might as well be uncomfortable about something that genuinely interested me. The Dunning-Kruger trough was waiting for me regardless. Better to fall into it doing something I would be proud to talk about afterwards.
 
-**Terminal (sparse, on episode end):**
-```
-+5.0   if zero population lost
-+0–2.0 efficiency bonus (faster containment ⇒ more)
-+1.0   briefing-adherence bonus (all priority zones survived)
-−3.0 · (pop_lost / total_pop)   if any population lost
-−2.0   if any crew casualty
-−0.01 × invalid_action_count    capped at −0.2
-```
-
-Empirical range: **−8 to +8**. That's a 16-point span, enough for clear advantages between rollout groups.
-
-**Two reward functions, not one.** For GRPO we register two reward functions with TRL:
-- `reward_fn_outcome` — the full episodic reward described above (computed by *running the full episode*, see "What broke" below).
-- `reward_fn_format` — a tiny standalone JSON-format check (`+0.15` for valid JSON with a recognized `action_type`, `0.0` for valid JSON with an unknown type, `−0.20` for unparseable garbage). This rewards good formatting independently from policy quality.
-
-This is the "multiple independent reward functions" pattern from the OpenEnv hackathon guide — and it cost us about 30 lines of code.
+So I started reading.
 
 ---
 
-## Training, in two stages
+## The Rothermel rabbit hole
 
-### Stage 1 — SFT warm-up (~30 min)
+For the unfamiliar: Richard Rothermel published the canonical surface-fire spread model in 1972, in a US Forest Service technical report titled, with monastic plainness, *"A Mathematical Model for Predicting Fire Spread in Wildland Fuels"*. It is roughly thirty pages, and it underwrites almost every operational fire-behaviour predictor used in the field since. BehavePlus, FARSITE, FlamMap, different tools, different abstractions, the same skeleton. I downloaded the PDF at four in the afternoon and was still reading it at midnight. I was unprepared for how much *taste* there was in those equations, the way Rothermel had to balance theoretical fidelity against parameters a real-world ranger could plausibly measure with a pole and a moisture probe. There is a particular kind of engineering elegance in a model that survives that long under field conditions.
 
-We harvested 4,300 `(prompt, action_json)` pairs from `HeuristicAgent` rollouts on successful episodes (filtered to `population_lost == 0`):
-
-| Tier | Examples |
-|---|---|
-| Easy | 2,000 |
-| Medium | 1,500 |
-| Hard | 800 |
-
-Then 1 epoch of SFT on Qwen-2.5-7B-Instruct via Unsloth 4-bit + LoRA (`r=32`, `α=64`, target modules: `q,k,v,o,gate,up,down`). The aim is **format priming**, not policy quality — we just want the model to reliably emit valid JSON `Action` objects so GRPO has something to optimize against. Going straight from base model to GRPO produced near-zero reward in our early experiments because most completions parsed as `IDLE`.
-
-### Stage 2 — GRPO with curriculum (~75 min on A100 40GB)
-
-Starting from the SFT adapter, we run TRL's `GRPOTrainer` with 8 generations per prompt, `learning_rate=3e-6`, `max_completion_length=192`. The reward function is the key piece:
-
-```python
-def reward_fn_outcome(completions, prompts, tier=None, seed=None, **kwargs):
-    rewards = []
-    for i, completion in enumerate(completions):
-        env = WildfireEnv()
-        # CRUCIAL: replay the EXACT (tier, seed) that produced this prompt
-        obs = env.reset(task_id=tier[i], seed=seed[i])
-        action, _ = parse_action(completion, obs)
-        result = env.step(action)
-        total = result.reward
-        # Heuristic carries the episode to completion so terminal reward fires
-        heuristic = HeuristicAgent()
-        while not env.done:
-            result = env.step(heuristic.act(env._current_obs))
-            total += result.reward
-        rewards.append(total)
-    return rewards
-```
-
-The `CurriculumController` watches a rolling 10-batch reward average and promotes the dataset from easy → medium → hard. A `TrainerCallback` rebuilds the prompt dataset whenever a promotion fires, so prompts and reward states stay synchronized.
+What surprised me more, and what tipped this project from "interesting" to "I have to do this", was how thin the work at the *intersection* of language models, reinforcement learning, and wildfire response was. There are RL papers on fire suppression (Subramanian and Crowley's forest-fire DRL work, Julian and Kochenderfer on aircraft routing for wildfire surveillance, the FireCommander multi-UAV environment). There are LLM-as-agent papers on disaster response. There is an entire operations-research literature on resource allocation in incident command. But the middle of that Venn diagram, where an LLM is the actor inside an RL loop on a Rothermel-style spread environment, was almost empty. For a solo entrant that is a gift. Judges will see ten polished agentic-coding projects for every one project that even *attempts* something this far off the beaten path. I would rather be the rough sketch of something unusual than the tenth-best version of something normal.
 
 ---
 
-## What broke (and what we fixed)
+## The metamorphosis
 
-We're including this section because we think the bugs are more interesting than the headline numbers.
+My first design was nothing like what I ended up shipping.
 
-### v1 GRPO bug #1 — Frozen dataset, live curriculum
+The initial prototype was a single-step decision agent. The model would receive a snapshot of the fire (a textual map, a brief weather summary, a list of crews) and produce *one* action. The environment would run a thirty-step simulation under a fixed policy, then report back a number. I would train against that number. Clean, simple, tractable. I built it out over two evenings.
 
-Our first GRPO run promoted the controller to medium at step 10 and to hard at step 20 — but the prompt dataset was built once before `trainer.train()` and *never refreshed*. So from step 10 onward the controller said "we're on hard" but the model was still being scored on easy-tier prompts. Training stats looked fine; the model wasn't actually learning the harder tasks.
+It was bad. Not in the "the loss is high" way, but in the "this isn't actually the problem I want to solve" way. A single decision under a thirty-step rollout teaches the model almost nothing about *sequencing*. It teaches it to be a one-shot triagist, a useful skill in narrow contexts, but not what an incident commander actually does. An IC's job is to keep deciding as the situation degrades, to revise, to recover when a crew gets hurt and the wind shifts and the second ignition happens behind them. None of that was in v1.
 
-**Fix:** add a `TrainerCallback.on_step_end` that compares `controller.get_tier()` against the last seen tier and rebuilds the train dataset from scratch when they diverge.
+The metamorphosis happened gradually. I added a step penalty so the model could not loiter. I added a terminal reward for population saved, and immediately the gradient washed out because the terminal reward was rare and small relative to per-step noise. I scaled the terminal reward up; the model learnt to game the per-step component instead. I added a *briefing*, a written paragraph describing priority zones, infrastructure, and the wind forecast, partly because real ICs read briefings, and partly because it gave me an honest measurement of instruction following. I added a curriculum because the hard tier, on its own, produced a flat reward curve and a sad-looking W&B chart. I added a second reward function for JSON validity because GRPO begs for it. I added a heuristic continuation step because I was burning GPU minutes making the model generate seven extra times per prompt, when the gradient only flowed through the *first* generation anyway.
 
-### v1 GRPO bug #2 — Truncated rollouts never saw terminal reward
-
-The first reward function ran for a fixed 15 steps, applying the LLM action at step 0 and the heuristic for 14 more steps. But hard tier has `min_active_steps=80`, so the +5.0 terminal reward never fired during training. GRPO advantages were dominated by ±0.5 per-step deltas, not the ±5 terminal spikes the reward was *designed* around.
-
-**Fix:** in v2, the reward function runs the full episode to `env.done`. This makes training 2× slower but *the gradient signal is now comparable to baseline reward*.
-
-### v1 GRPO bug #3 — Prompt/reward state mismatch
-
-The most insidious bug. The dataset's prompts were generated from `(tier, seed=fresh_random)`. The reward function then **picked a different random seed** to roll out against. So the model was being scored in a completely different env state than the one shown in its prompt. Imagine being asked "what would you do here?" while shown a photo of New York, and graded on what would have happened in Tokyo.
-
-**Fix:** every dataset row stores its `seed`. The reward function reads `seed` from `kwargs` (TRL passes dataset columns through as kwargs) and resets the env to that exact `(tier, seed)`. Prompt state and reward state are now identical.
-
-### v1 GRPO bug #4 — Wasted inner generations
-
-The v1 reward function called `model.generate()` *seven extra times per completion* to build a multi-step rollout. But GRPO gradients only flow through the originally sampled completion — those 7 extra generations were expensive noise.
-
-**Fix:** `MODEL_STEPS = 1`. The model's sampled completion is applied as the step-0 action; the heuristic carries the rest. The wall-clock per training step dropped by ~70%.
-
-### v1 GRPO bug #5 — Crash on format-only reward
-
-We tried to add a format-validity reward early on, but `parse_action(text, obs)` reads `obs.grid` to validate spatial fields. Calling it with `obs=None` for a pure format check crashed.
-
-**Fix:** a standalone `check_json_format(text)` function that doesn't need an obs. Three-state output (`json_success / regex_fallback / safe_idle`) → reward `(+0.15 / 0 / −0.20)`.
-
-We're being open about these bugs because we think *the post-mortem matters more than the leaderboard.* Anyone training GRPO on a custom OpenEnv environment is likely to hit at least three of these five.
+Each of those decisions came from running the thing and watching it fail in a specific, legible way. The system I ended up with is not the system I designed. It is the system that survived.
 
 ---
 
-## Results
+## What I want the judges to take away
 
-> Evaluated on seeds 42–56 (15 per tier) via Section 10 of [`training/grpo_v2_colab.ipynb`](training/grpo_v2_colab.ipynb). No overlap with training seeds 0–99.
+There were nights, there are always nights, where the project felt absurd. A solo participant. First RL project. A custom environment. A custom reward decomposition. SFT, then GRPO, on a 7B model, on Colab, with a curriculum controller and a callback that rebuilds the dataset mid-run. I made all the canonical mistakes, including, briefly, training on a dataset whose seeds did not match the seeds the reward function rolled out against, which is the GRPO equivalent of grading a student's geography exam by asking them about a different country. I found it the way you always find these things, by squinting at a sample completion at 2 a.m. and thinking *wait, that does not match*.
 
-| Agent | Easy | Medium | Hard |
-|---|---|---|---|
-| Random | +6.23 ± 3.09 | +1.31 ± 3.24 | +2.16 ± 2.96 |
-| Heuristic | +7.53 ± 0.08 | +6.31 ± 2.77 | +4.74 ± 3.79 |
-| **Trained Qwen-2.5-7B (ours)** | **+5.13 ± 3.90** | **+5.74 ± 3.07** | **+2.14 ± 2.87** |
-| **Δ vs. Heuristic** | −2.41 | **−0.58 ✓** | −2.59 |
+But I learned more in three weeks than I would have from a semester of well-mannered tutorials. Reinforcement learning, as a sub-field, is unforgiving in a productive way. It does not let you confuse "the loss is going down" with "the model is doing the thing". You have to look. You have to read rollouts. You have to talk to your model the way an IC talks to a crew chief, patiently, specifically, willing to be told the plan is wrong.
 
-**JSON success rate (trained agent):** Easy 98.5% · Medium 99.8% · Hard 99.2% — the SFT warm-up held.
+If a judge reads this far, I want to be candid about what I think the contribution actually is. The trained model does not beat the heuristic on hard tier. It approaches it on medium (+5.74 vs. +6.31) and falls short on hard, and I would rather submit honest numbers than goose them. The headline is not the leaderboard, it is the *artifact*: a typed, OpenEnv-compliant environment with a Rothermel-flavoured spread model, a decomposed reward built for GRPO, a serialiser that keeps prompt length sub-linear in grid size, a parser that refuses to crash on malformed completions, and an end-to-end training recipe somebody else can pick up tomorrow and improve on. Plus a frank post-mortem of every bug I hit along the way, which is, I suspect, more useful to the next person trying this than another tenth of a reward point would be.
 
-**Population-saved %:** Easy 87% · Medium 97% · Hard 92% — strong civilian-safety outcomes especially on medium.
+I started this project because of a one-minute clip about somebody else's bad night. I am finishing it knowing more about reinforcement learning, more about wildland fire science, and a little more about my own tolerance for ambiguity than I did three weeks ago.
 
-**Curriculum progression:** easy (steps 0–52) → medium (steps 53–62) → hard (steps 63–149). Notably, the model promoted to hard tier after only 10 medium-tier steps, suggesting the SFT warm-up provided strong prior knowledge that transferred across tiers.
-
-The training reward curve and tier-promotion timeline are in [`training/training_dashboard.png`](training/training_dashboard.png); the full W&B run is at [saini-eshit-/wildfire-grpo/runs/dnz56kuu](https://wandb.ai/saini-eshit-/wildfire-grpo/runs/dnz56kuu).
-
-### What the trained agent learned (qualitatively)
-
-From inspection of training reward trajectories and the fast curriculum progression:
-
-- **Prioritizes population protection over area containment.** The 97% population-saved rate on medium with only +5.74 reward (vs heuristic's +6.31) suggests the model learned to protect civilians first even at the cost of letting more area burn — a valid trade-off the reward function supports.
-- **Formats reliably under pressure.** 99%+ JSON success across all tiers means SFT formatting survived GRPO optimization intact — the format reward function (+0.15 / 0 / −0.20) successfully anchored this.
-- **Generalizes across tiers quickly.** Reaching hard tier in 63 steps suggests the SFT heuristic demonstrations transferred well; the model didn't need many GRPO steps per tier to learn the core strategy.
+The sticky note is staying on the monitor.
 
 ---
 
-## Key learnings
+## The five bugs that taught me the most
 
-1. **Reward decomposition matters more than model size.** A wide, structured reward gave a 7B model enough signal to surpass random and approach the heuristic on medium. We expect a 1.5B model would also work — the bottleneck is reward design, not parameters.
-2. **Curriculum is essential for long-horizon tasks.** Throwing hard tier directly at the SFT model produced near-zero gradient signal — the +5 terminal bonus was almost never observed. Easy → medium → hard with auto-promotion was the difference.
-3. **Format compliance must be a first-class reward, not an afterthought.** The format-only reward function (`+0.15 / 0 / −0.20`) cost us 30 lines and meaningfully reduced parse-failure rate during training. It also makes the JSON success rate trackable as an independent metric.
-4. **Replay the prompt's exact env state when scoring completions.** Stochastic env resets in your reward function turn GRPO into "what's a good action *somewhere*?" instead of "what's a good action *here*?". The latter is what you actually want.
-5. **Heuristic continuation is a powerful variance-reduction trick.** Letting the heuristic finish each rollout reduces noise from the model's later (uncertain) actions, so the gradient signal mostly reflects the *first* action's quality. Combined with full-episode rollout, you get terminal reward without 300 model.generate() calls per training step.
-6. **Inspect generations on disk every N steps.** TRL's stdout logging shows you `mean_reward` only. Saving the first completion of each batch to `training/samples/call_{n}.txt` is what catches reward hacking and format regressions before they become catastrophic.
+A short post-mortem, because the bugs are the part of the story you actually learn from.
 
----
-
-## Limitations and future work
-
-- **Heuristic continuation is a double-edged sword.** It reduces variance, but the reward attributes a good outcome to the model's first action even when the heuristic deserves most of the credit. A planned ablation: train one model with heuristic continuation and one with full-model rollout, compare on held-out seeds.
-- **Hard tier still has high variance.** Heuristic std on hard is ±3.79 — bimodal between full saves and total losses. Smoothing the ignition-spawn distribution (`_find_ignition_candidate` in `wildfire_env.py`) would reduce this.
-- **Single-tenant FastAPI server.** The HF Space currently uses a module-level `_env` singleton. Two concurrent users would clobber each other's episode. Per-session env binding via cookie/header is a 30-line fix we deferred.
-- **Held-out generalization untested at scale.** We evaluate on seeds 200–214 (15 per tier) which don't appear in the 0–99 training pool. A larger holdout (say 200–999) would tighten the confidence intervals.
-- **No multi-agent coordination experiments yet.** Each crew already runs a local autonomous policy; an obvious next step is to also let multiple LLM ICs collaborate on a shared incident.
-
----
-
-## Acknowledgments
-
-- **Meta** and **Hugging Face** for the OpenEnv hackathon, the OpenEnv spec, and Hugging Face Spaces.
-- **Scaler** for being an amazing host, had great fun interacting with participants from various parts of the country as well as walks of life.
-- **Unsloth** for fast 4-bit LoRA training on consumer/colab GPUs.
-- **The TRL team** for `GRPOTrainer`, especially the multi-reward-function support.
-- The Rothermel surface-fire spread model, which has shaped wildfire science since 1972 — even our toy version owes its structure to that work.
+1. **Frozen dataset, live curriculum.** The controller promoted to *medium* at step 10 and *hard* at step 20, but the prompt dataset was built once before training and never refreshed. The model was happily being scored on easy prompts while the dashboard insisted it was on hard. Fixed with a `TrainerCallback` that rebuilds the dataset on tier change.
+2. **Truncated rollouts never saw terminal reward.** v1 ran a fixed 15 step rollout per completion. Hard tier needs at least 80 steps before the +5 survival bonus can fire, so GRPO was optimising against per-step deltas only. v2 runs to `env.done`. Twice as slow, gradient signal night-and-day better.
+3. **Prompt and reward state mismatch.** Each dataset row was generated with a fresh random seed, and the reward function picked *another* fresh seed at scoring time. The model was being graded on a different fire than the one in its prompt. Now every row carries its `seed`, and the reward function resets to that exact `(tier, seed)`.
+4. **Wasted inner generations.** v1 called `model.generate()` seven extra times per completion to build a multi-step rollout, but GRPO gradients only flow through the originally sampled completion. Those seven calls were expensive noise. Cutting `MODEL_STEPS` to 1 and letting the heuristic finish the episode dropped wall-clock per step by about 70%.
+5. **Format reward crashing on `obs=None`.** The action parser reads `obs.grid` to validate spatial fields, so calling it for a pure JSON-validity check crashed. A standalone `check_json_format()` that does not need an obs solved it in twenty lines.
 
 ---
 
 ## Links
 
-- 🚀 Live env on Hugging Face: [`Eshit/Wildfire-Containment-Simulator`](https://huggingface.co/spaces/Eshit/Wildfire-Containment-Simulator)
-- 💻 Source on GitHub: [`Abrodolph/Wildfire-Containment-Simulator`](https://github.com/Abrodolph/Wildfire-Containment-Simulator)
-- 📒 GRPO notebook: [`training/grpo_v2_colab.ipynb`](training/grpo_v2_colab.ipynb)
-- 📒 SFT notebook: [`training/sft_colab.ipynb`](training/sft_colab.ipynb)
-- 📊 Baselines: [`scripts/results.json`](scripts/results.json)
-- 📈 Training dashboard: [`training/training_dashboard.png`](training/training_dashboard.png)
-- 🎬 Heuristic replay: [`demos/heuristic_replay.gif`](demos/heuristic_replay.gif)
-- 📄 Top-level overview: [`README.md`](README.md)
+- Live environment on Hugging Face: [`Eshit/Wildfire-Containment-Simulator`](https://huggingface.co/spaces/Eshit/Wildfire-Containment-Simulator)
+- Source: [`Abrodolph/Wildfire-Containment-Simulator`](https://github.com/Abrodolph/Wildfire-Containment-Simulator)
+- Trained model: [`Eshit/wildfire-grpo-7b`](https://huggingface.co/Eshit/wildfire-grpo-7b)
+- W&B run: [`saini-eshit-/wildfire-grpo/runs/dnz56kuu`](https://wandb.ai/saini-eshit-/wildfire-grpo/runs/dnz56kuu)
+- GRPO notebook: [`training/grpo_v2_colab.ipynb`](training/grpo_v2_colab.ipynb)
+- SFT notebook: [`training/sft_colab.ipynb`](training/sft_colab.ipynb)
+- Top-level overview: [`README.md`](README.md)
 
-*— Eshit Saini, April 2026*
+*Eshit, April 2026*
