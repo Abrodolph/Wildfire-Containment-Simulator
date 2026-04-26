@@ -36,14 +36,21 @@ environment:
 
 action_space:
   type: object
-  description: "One action per step. Six action types with typed parameters."
+  description: "One action per step. Seven action types with typed parameters."
   properties:
     action_type:
       type: string
-      enum: [deploy_crew, move_crew, drop_retardant, build_firebreak, recon_flight, idle]
+      enum:
+        - deploy_crew
+        - move_crew
+        - order_crew_objective
+        - drop_retardant
+        - build_firebreak
+        - recon_flight
+        - idle
     crew_id:
       type: string
-      description: "Required for deploy_crew, move_crew, build_firebreak"
+      description: "Required for deploy_crew, move_crew, build_firebreak, order_crew_objective"
     tanker_id:
       type: string
       description: "Required for drop_retardant"
@@ -57,6 +64,17 @@ action_space:
       type: string
       enum: [N, S, E, W, NE, NW, SE, SW]
       description: "Required for move_crew, build_firebreak"
+    objective:
+      type: string
+      enum:
+        - hold
+        - advance
+        - retreat
+        - prioritize_north
+        - prioritize_south
+        - prioritize_east
+        - prioritize_west
+      description: "Required for order_crew_objective. Persistent directive that biases the crew's local policy until changed."
     reason:
       type: string
       description: "Optional reason string for idle action"

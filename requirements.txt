@@ -1,9 +1,31 @@
+# ── Core environment runtime ────────────────────────────────────────────────
 pydantic>=2.0
 numpy>=1.24
-openai>=1.0
+
+# ── HTTP server (Hugging Face Space, OpenEnv contract) ──────────────────────
 fastapi>=0.100.0
 uvicorn>=0.23.0
+python-multipart>=0.0.6
+
+# ── LLM client (used by inference.py for OpenAI-compatible API rollouts) ────
+openai>=1.0
+
+# ── Replay rendering / dashboards ───────────────────────────────────────────
 matplotlib>=3.7
 imageio>=2.28
+Pillow>=9.0
+
+# ── Test suite ──────────────────────────────────────────────────────────────
 pytest>=7.0
 pytest-cov>=4.0
+
+# ── Optional extras for evaluating a trained adapter locally ────────────────
+# (Training itself is run on Colab/HF Space JupyterLab; see training/grpo_v2_colab.ipynb,
+#  which installs unsloth + trl + datasets inline. These pins here are purely so
+#  `python scripts/eval_trained_model.py` works in a stock Python venv.)
+# torch>=2.1
+# transformers>=4.45
+# accelerate>=0.30
+# peft>=0.10
+# safetensors>=0.4
+

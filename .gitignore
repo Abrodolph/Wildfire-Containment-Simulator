@@ -68,3 +68,9 @@ Thumbs.db
 desktop.ini
 .idea/
 .vscode/
+
+# Private project notes (not for judges / public)
+HACKATHON_ALIGNMENT.md
+colab_prompts.md
+private_notes/
+.private/

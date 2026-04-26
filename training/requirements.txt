@@ -1,0 +1,37 @@
+# Training dependencies for SFT + GRPO
+#
+# These are the packages the Colab/HF-Space-JupyterLab notebooks install at
+# runtime (see Section 1 of training/grpo_v2_colab.ipynb and training/sft_colab.ipynb).
+# Pinned to versions that are known to work together with Unsloth 4-bit + Qwen2.5.
+#
+# Usage:
+#   pip install -r training/requirements.txt
+#
+# Note: Unsloth must be installed from its GitHub source for current Colab CUDA wheels.
+
+# Project runtime (env, agents, graders)
+-r ../requirements.txt
+
+# RL framework
+trl==0.15.2
+
+# Datasets / tokenizers
+datasets==3.4.1
+
+# Quantized fine-tuning
+unsloth @ git+https://github.com/unslothai/unsloth.git
+peft>=0.11
+bitsandbytes>=0.43
+
+# Model + acceleration backbone
+torch>=2.1
+transformers>=4.45
+accelerate>=0.30
+safetensors>=0.4
+
+# Logging
+wandb>=0.17
+
+# Misc utilities used by the notebooks
+huggingface_hub>=0.24
+sentencepiece>=0.2
