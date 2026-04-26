@@ -246,4 +246,4 @@ From inspection of training reward trajectories and the fast curriculum progress
 - 🎬 Heuristic replay: [`demos/heuristic_replay.gif`](demos/heuristic_replay.gif)
 - 📄 Top-level overview: [`README.md`](README.md)
 
-*— Team Wildfire, April 2026*
+*— Eshit Saini, April 2026*
