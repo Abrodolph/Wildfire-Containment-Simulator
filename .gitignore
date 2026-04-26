@@ -72,5 +72,14 @@ desktop.ini
 # Private project notes (not for judges / public)
 HACKATHON_ALIGNMENT.md
 colab_prompts.md
+prompts.md
+implementation_plan.md
+Summary.txt
+yt.txt
+CLAUDE.md
+AGENTS.md
+# Meta / hackathon reference PDFs (keep out of Hub for size + IP)
+*OpenEnv*Hackathon*Participant*Help*Guide*.pdf
+*External*Meta*OpenEnv*Hackathon*.pdf
 private_notes/
 .private/
