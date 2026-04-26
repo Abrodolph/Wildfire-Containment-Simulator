@@ -43,7 +43,7 @@ A partially-observable disaster simulation where an LLM acts as **Incident Comma
 | 📒 **SFT warm-up notebook** | [`training/sft_colab.ipynb`](training/sft_colab.ipynb) |
 | 📝 **Long-form blog post** | [`BLOG.md`](BLOG.md) |
 | 📊 **Baseline eval JSON** | [`scripts/results.json`](scripts/results.json) |
-| 📈 **Training dashboard** | [`training/training_dashboard.png`](training/training_dashboard.png) *(generated post-run)* |
+| 📈 **Training dashboard** | [W&B run: wildfire-grpo/runs/dnz56kuu](https://wandb.ai/saini-eshit-/wildfire-grpo/runs/dnz56kuu) |
 | 🎬 **Heuristic replay GIF** | [`demos/heuristic_replay.gif`](demos/heuristic_replay.gif) |
 | 🎥 **2-minute pitch video** | *(YouTube link coming soon)* |
 
@@ -273,7 +273,7 @@ We use a two-stage recipe:
 **Hardware:** A100 Large (40 GB) on a Hugging Face Space JupyterLab session. ~75 minutes total wall-clock time.
 **Training stack:** `unsloth 2026.4.8` (4-bit QLoRA), `trl==0.20.0`, `datasets==3.4.1`, `transformers 5.5.0`, `peft`, `wandb`.
 
-**Training plots:** [`training/training_dashboard.png`](training/training_dashboard.png) (reward curve + curriculum tier timeline). W&B run: [saini-eshit-/wildfire-grpo/runs/dnz56kuu](https://wandb.ai/saini-eshit-/wildfire-grpo/runs/dnz56kuu).
+**Training plots:** W&B run [saini-eshit-/wildfire-grpo/runs/dnz56kuu](https://wandb.ai/saini-eshit-/wildfire-grpo/runs/dnz56kuu) (reward curve, KL divergence, format reward, curriculum tier timeline). Local dashboard: `training/training_dashboard.png` (not tracked in git — generate with `python scripts/plot_grpo_training.py`).
 
 For the design rationale, the SFT/GRPO trade-offs, and a frank discussion of what went wrong on our first GRPO attempt, read [`BLOG.md`](BLOG.md).
 
