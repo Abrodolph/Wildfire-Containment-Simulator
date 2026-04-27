@@ -45,7 +45,7 @@ A partially-observable disaster simulation where an LLM acts as **Incident Comma
 | 📊 **Baseline eval JSON** | [`scripts/results.json`](scripts/results.json) |
 | 📈 **Training dashboard** | [W&B run: wildfire-grpo/runs/dnz56kuu](https://wandb.ai/saini-eshit-/wildfire-grpo/runs/dnz56kuu) |
 | 🎬 **Heuristic replay GIF** | [`demos/heuristic_replay.gif`](demos/heuristic_replay.gif) |
-| 🎥 **2-minute pitch video** | *(YouTube link coming soon)* |
+| 🎥 **2-minute pitch video** | [`Youtube Video`](https://youtu.be/yGLzht-RPyg) |
 
 ---
 
